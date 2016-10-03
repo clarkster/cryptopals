@@ -6,7 +6,7 @@ import scala.io.Source
 class ScoreSpec extends FlatSpec with Matchers {
 
   "Example String" should "frequency analysis" in {
-    val charNStr = Bytes.bestSingleChar(Hex("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736").bytes)
+    val charNStr = Old.bestSingleChar(ByteList.fromHex("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736").bytes.toArray)
     charNStr shouldBe ('X', "Cooking MC's like a pound of bacon", 596)
   }
 

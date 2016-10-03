@@ -1,50 +1,31 @@
 package clarkster
 
-class Base64(val bytes : Array[Byte]) {
-  override def toString = Helpers.bytesToString(bytes)
-
-  override def equals(o: Any) = o match {
-    case that: Base64 => that.bytes.sameElements(this.bytes)
-    case _ => false
-  }
-
-  def decode : Array[Byte] = Base64.decode(this)
-}
-
 object Base64 {
-  def apply(bytes : Array[Byte]) = {
-    require(bytes.length % 4 == 0)
-    new Base64(bytes)
-  }
 
-  def apply(str : String) = {
-    require(str.length % 4 == 0)
-    new Base64(str.getBytes)
-  }
-
-  def encode(hex : Array[Byte]) : Base64 = {
-    Base64(hex
+  def encode[T <: Bytes[T]](bytes : Bytes[T]) : String = {
+    Helpers.bytesToString(bytes.bytes
       .iterator
       .sliding(3, 3).withPadding(0)
       .flatMap(threeToFour)
       .map(encode)
       .toArray
-      .dropRight(padLength(hex)) ++ Array.fill(padLength(hex))(pad))
+      .dropRight(padLength(bytes)) ++ Array.fill(padLength(bytes))(pad))
   }
 
-  def decode(base64 : Base64) : Array[Byte] = {
-    base64.bytes
+  def decode(base64 : String) : ByteList = {
+    ByteList(base64.getBytes
       .map(decode)
+      .filter(_ >= 0)
       .sliding(4, 4)
       .flatMap(fourToThree)
-      .take(lengthMinusPadding(base64.bytes))
-      .toArray
+      .take(lengthMinusPadding(base64))
+      .toList)
   }
 
   val base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
   val pad = '='.toByte
 
-  private def padLength(hex : Array[Byte]): Int = {
+  private def padLength[T <: Bytes[T]](hex : Bytes[T]) : Int = {
     hex.length % 3 match {
       case 0 => 0
       case 1 => 2
@@ -52,8 +33,8 @@ object Base64 {
     }
   }
 
-  private def lengthMinusPadding(base64 : Array[Byte]): Int = {
-    val padLength = base64.takeRight(2) match {
+  private def lengthMinusPadding(base64 : String): Int = {
+    val padLength = base64.takeRight(2).toCharArray match {
       case Array('=', '=') => 3
       case Array(_, '=') => 2
       case _=> 0
