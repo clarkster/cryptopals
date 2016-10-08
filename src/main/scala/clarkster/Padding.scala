@@ -7,7 +7,7 @@ sealed abstract class Padding {
 
 case object NoPadding extends Padding {
   override def pad = (blockSize: Int, bytes : ByteList) => {
-    assert(bytes.length % blockSize == 0)
+    //assert(bytes.length % blockSize == 0)
     bytes
   }
 

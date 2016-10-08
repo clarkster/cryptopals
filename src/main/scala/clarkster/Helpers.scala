@@ -42,10 +42,12 @@ object Helpers {
 
   private def byteToHex(int: Int) = hexChars.charAt(int)
 
+  def xOrByte(b1 : Byte, b2 : Byte) : Byte = (b1 ^ b2).toByte
+
   def xOr(array1: List[Byte], array2: List[Byte], truncateToShortest : Boolean = false) : List[Byte] = {
     require(truncateToShortest || array1.length == array2.length)
     array1 zip(array2) map {
-      case (b1, b2) => (b1 ^ b2) toByte
+      case (b1, b2) => xOrByte(b1, b2)
     }
   }
 

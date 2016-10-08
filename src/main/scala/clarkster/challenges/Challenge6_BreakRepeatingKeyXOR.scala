@@ -41,14 +41,11 @@ object Challenge6_BreakRepeatingKeyXOR extends Challenge {
     println("Test string: " + bytes.base64)
     val keySize = Oracle.detectECBBlockSize(bytes)
     println("Determined Key Size: " + keySize)
-    val blocks = bytes.blocks(keySize, PKCS7).map(_.bytes)
-    val transposed = blocks.transpose
+    val key = Oracle.breakRepeatingKeyXOrKey(bytes, keySize)
 
-    val solveds = transposed.map(arr => Score.bestSingleChar(arr))
-    val key = solveds.map(_._1)
-    println("Determine Key: " + Helpers.bytesToString(key))
+    println("Determine Key: " + key.ascii)
 
-    val decoded = bytes.xOrRepeating(key)
+    val decoded = bytes.xOrRepeating(key.bytes)
     println("Decoded message: ")
     println(Helpers.bytesToString(decoded.bytes))
   }

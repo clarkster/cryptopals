@@ -1,6 +1,14 @@
 package clarkster
 
 object Oracle {
+  def breakRepeatingKeyXOrKey(bytes: ByteList, keySize: Int) = {
+    val blocks = bytes.blocks(keySize, PKCS7).map(_.bytes)
+    val transposed = blocks.transpose
+
+    val solveds = transposed.map(arr => Score.bestSingleChar(arr))
+    Block(solveds.map(_._1))
+  }
+
 
   def detectECBOrCBC(fn: Algorithms.Encryptor) = {
     val repeatedChars = ByteList.copies(16 * 1000, 'A')
