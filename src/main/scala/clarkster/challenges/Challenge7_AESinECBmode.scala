@@ -23,10 +23,10 @@ object Challenge7_AESinECBmode extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
+
     val encrypted = CipherText.fromBase64(Source.fromURL(getClass.getResource("/test7.txt")).mkString(""), 16)
-    val spec = AlgorithmSpec(key = Key("YELLOW SUBMARINE"), mode=ECB)
-    val decryptor : Algorithms.Decryptor = Algorithms.decrypt(spec)
+    val decryptor = ECB(Key("YELLOW SUBMARINE"))
     println("Decrypted Text:")
-    println(Helpers.bytesToString(decryptor.apply(encrypted).bytes))
+    println(decryptor.decrypt(encrypted).ascii)
   }
 }

@@ -1,6 +1,6 @@
 package clarkster.challenges
 
-import clarkster.{CookieParser, EcbHacker, Helpers, Old}
+import clarkster._
 
 object Challenge13_ECBCutAndPaste extends Challenge {
   override val number: Int = 13
@@ -41,8 +41,65 @@ object Challenge13_ECBCutAndPaste extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    val encryptedProfile : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKey(CookieParser.profileFor("cookie@monster.com").getBytes, Old.randomBytes(16))
-    val decrypted = EcbHacker.crackEncryptor(encryptedProfile)
-    println (Helpers.bytesToString(decrypted))
+    def parse(str : String) : Map[String, String] = {
+      str split('&') map(str => str.split("=")) map(pair => pair(0) -> pair(1)) toMap
+    }
+
+    def profileFor(str : String) : String = {
+      encodeProfile(Map(
+        ("email" -> str),
+        ("uid" -> "10"),
+        ("role" -> "user")
+      ))
+    }
+
+    def encodeProfile(profile : Map[String, String]) : String =  {
+      return profile mapValues(_.replaceAll("&=", "")) map(pair => pair._1 + "=" + pair._2) mkString "&"
+    }
+
+    val ecb = ECB(Key.random(16))
+
+    def encryptProfileFor(str : String) : CipherText = {
+      ecb.encrypt(ByteList.fromAscii(profileFor(str)))
+    }
+
+    def decryptProfileFor(txt : CipherText) : Map[String, String] = {
+      parse(ecb.decrypt(txt).ascii)
+    }
+
+    val encryptor : Algorithms.Encryptor = {
+      byteList => encryptProfileFor(byteList.ascii)
+    }
+
+    val profile1 = encryptProfileFor("JoeBloggs@test.com")
+
+    val t2 = decryptProfileFor(profile1.blocks ++ profile1.blocks)
+
+    val blockSize = Oracle.detectECBBlockSize(encryptor)
+    println(
+      s"""
+        |Regular user, decrypts to " + ${decryptProfileFor(profile1)}
+        |Then analysing the individual blocks:
+        |Block size is " + ${blockSize}
+        |There's a 6 byte prefix (for email=), then our text, then a 18 byte suffix (for &uid=10&role=user)
+        |So by using an email of length 13, and encrypting it, we will force user into a block of its own
+        |2x16 byte crypto blocks for the preamble, and 1xblock of crypto(user) - padded
+      """.stripMargin)
+
+
+    val profile2 = encryptProfileFor("1234567890123")
+    val profile3 = encryptProfileFor("1234567890" + "admin" + ByteList.copies(11, '=').ascii) // pad with a character we know will be strippeds
+
+    println(
+      s"""
+         |Now we have two rogue profiles. One valid profile which allows us to force 'user' into a block of its own in
+         |the Crypto output, and once which tells us the Crypyo for 'admin' (padded)
+         |Our hack crypto text is constructed from the valid profile, with the last block replaced
+      """.stripMargin)
+
+    val target = profile2.blocks.slice(0, 2) :+ profile3.blocks(1)
+    println("Decrypted profile is " + decryptProfileFor(target))
+    assert(decryptProfileFor(target)("role") == "admin")
+    println("And we're successfully admin")
   }
 }

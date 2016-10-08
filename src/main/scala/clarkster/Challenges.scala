@@ -1,10 +1,5 @@
 package clarkster
 
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
-
-import scala.io.Source
-
 object Challenges {
 
 //  def round12() = {

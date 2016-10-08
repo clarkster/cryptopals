@@ -1,6 +1,6 @@
 package clarkster.challenges
 
-import clarkster.{ByteList}
+import clarkster.ByteList
 
 object Challenge2_FixedXor extends Challenge {
 

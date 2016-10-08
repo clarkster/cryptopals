@@ -1,7 +1,6 @@
 package clarkster.challenges
 
-import clarkster.{ByteList, Helpers, Old, PKCS7}
-import com.sun.tools.corba.se.idl.toJavaPortable.Helper
+import clarkster._
 
 import scala.io.Source
 
@@ -40,12 +39,12 @@ object Challenge6_BreakRepeatingKeyXOR extends Challenge {
   override def main(args: Array[String]): Unit = {
     val bytes = ByteList.fromBase64(Source.fromURL(getClass.getResource("/test6.txt")).mkString(""))
     println("Test string: " + bytes.base64)
-    val keySize = Old.determineKeySize(bytes)
+    val keySize = Oracle.detectECBBlockSize(bytes)
     println("Determined Key Size: " + keySize)
     val blocks = bytes.blocks(keySize, PKCS7).map(_.bytes)
     val transposed = blocks.transpose
 
-    val solveds = transposed.map(arr => Old.bestSingleChar(arr))
+    val solveds = transposed.map(arr => Score.bestSingleChar(arr))
     val key = solveds.map(_._1)
     println("Determine Key: " + Helpers.bytesToString(key))
 

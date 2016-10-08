@@ -7,7 +7,7 @@ sealed abstract class Padding {
 
 case object NoPadding extends Padding {
   override def pad = (blockSize: Int, bytes : ByteList) => {
-    assert(blockSize == bytes.length)
+    assert(bytes.length % blockSize == 0)
     bytes
   }
 
@@ -16,7 +16,7 @@ case object NoPadding extends Padding {
 
 case object PKCS7 extends Padding {
   override def pad = (blockSize: Int, bytes : ByteList) => {
-    val padLength = (blockSize - bytes.length % blockSize) % blockSize
+    val padLength = blockSize - bytes.length % blockSize
     val padChar: Byte = Byte.box(padLength.toByte)
     ByteList(bytes.bytes ++ List.fill(padLength)(padChar))
   }
@@ -24,16 +24,14 @@ case object PKCS7 extends Padding {
   override def unpad = (block : ByteList) => {
     val iterator = block.bytes.reverseIterator
     val padChar = iterator.next()
-    if (padChar < block.length) {
-      val otherPadChars = 1 + iterator.takeWhile(i => i == padChar).length
-      if (otherPadChars != padChar) {
-        throw new IllegalArgumentException("Bad padding")
-      }
-      ByteList(block.bytes.take(block.length - otherPadChars))
-    } else {
-      block
+    if (padChar >= block.length) {
+      throw new IllegalArgumentException("Bad padding")
     }
-
+    val otherPadChars = 1 + iterator.takeWhile(i => i == padChar).length
+    if (otherPadChars != padChar) {
+      throw new IllegalArgumentException("Bad padding")
+    }
+    ByteList(block.bytes.take(block.length - otherPadChars))
   }
 
 }

@@ -25,9 +25,8 @@ object Challenge10_ImplementCBCMode extends Challenge {
 
   override def main(args: Array[String]): Unit = {
     val source = CipherText.fromBase64(Source.fromURL(getClass.getResource("/test10.txt")).getLines().mkString, 16)
-    val spec = AlgorithmSpec(key = Key("YELLOW SUBMARINE"), mode = CCB, initializationVector = Block(List.fill(16)(0)))
-    val decryptor : Algorithms.Decryptor = Algorithms.decrypt(spec)
-    val decrypted = decryptor.apply(source)
+    val cbc = CBC(Key("YELLOW SUBMARINE"), Block.copies(16, 0))
+    val decrypted = cbc.decrypt(source)
     println("Decrypted Poetry:")
     println(decrypted.ascii)
   }

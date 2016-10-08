@@ -1,7 +1,9 @@
 package clarkster.challenges
 
-import clarkster.{Algorithms, CipherText, Mode, Old}
-import com.sun.org.apache.xml.internal.security.algorithms.JCEMapper.Algorithm
+import clarkster.Helpers.intWithTimes
+import clarkster._
+
+import scala.util.Random
 
 object Challenge11_AnECBvsCBCDetectionOracle extends Challenge {
   override val number: Int = 11
@@ -26,10 +28,22 @@ object Challenge11_AnECBvsCBCDetectionOracle extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    (1 to 100).foreach(i => {
-      val (mode, fn) = Old.encryptionOracle
-      assert(Old.decryptionOracle(fn) == mode)
-    })
+    def encryptionOracle :  (Algorithm, Algorithms.Encryptor) = {
+      val (mode, encryptor) = if (Random.nextBoolean()) {
+        (ECB, ECB(Key.random(16), padding = PKCS7))
+      } else {
+        (CBC, CBC(Key.random(16), Block.random(16), padding = PKCS7))
+      }
+      val encryptorWithRandomPrefixSuffix : Algorithms.Encryptor =
+              {plainText : ByteList => encryptor.encrypt(ByteList(Helpers.randomLengthOfRandomBytes(5, 10) ++ plainText.bytes ++ Helpers.randomLengthOfRandomBytes(5, 10)))}
+      (mode, encryptorWithRandomPrefixSuffix)
+    }
+
+    100 times {
+      val (mode, fn) = encryptionOracle
+      val detected = Oracle.detectECBOrCBC(fn)
+      assert(detected == mode)
+    }
     println("Successfully detected 100 times")
   }
 

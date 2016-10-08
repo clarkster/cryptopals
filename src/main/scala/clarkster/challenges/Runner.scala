@@ -1,6 +1,7 @@
 package clarkster.challenges
 
 import org.reflections.Reflections
+
 import scala.collection.JavaConversions._
 import scala.reflect.runtime.universe
 

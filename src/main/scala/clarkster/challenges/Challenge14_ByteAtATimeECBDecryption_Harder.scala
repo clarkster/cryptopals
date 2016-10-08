@@ -1,6 +1,7 @@
 package clarkster.challenges
 
-import clarkster.{EcbHacker, Helpers}
+import clarkster._
+
 
 object Challenge14_ByteAtATimeECBDecryption_Harder extends Challenge {
   override val number: Int = 14
@@ -19,7 +20,21 @@ object Challenge14_ByteAtATimeECBDecryption_Harder extends Challenge {
 
   override def main(args: Array[String]): Unit = {
     println("Detecting... (this one's a bit slow)")
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKeyWithRandom(EcbHacker.secretBytes.bytes.toArray, EcbHacker.fixedSecretKey)
+
+    val ecb = ECB(key = Key.random(16))
+    val secretText =
+      """
+        |Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
+        |aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
+        |dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
+        |YnkK
+      """.stripMargin
+    val secret = ByteList.fromBase64(secretText)
+
+    val secretAppended = Algorithms.withSecretAppended(secret, ecb.encrypt)
+    val encryptor = Algorithms.withRandomPrepended(256, secretAppended)
+
+
     println (Helpers.bytesToString(EcbHacker.crackEncryptorWithRandomPrefix(encryptor)))
   }
 }

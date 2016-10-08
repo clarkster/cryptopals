@@ -4,48 +4,55 @@ import javax.crypto.Cipher
 
 import scala.annotation.tailrec
 
-sealed abstract class Mode
-case object ECB extends Mode
-case object CCB extends Mode
+sealed abstract class Algorithm
 
-case class AlgorithmSpec(
-                          key : Key,
-                          initializationVector: Block = Block(Nil),
-                          blockLength : Int = 16,
-                          padding : Padding = PKCS7,
-                          mode : Mode = ECB)
-
-object Algorithms {
-  type Encryptor = ByteList => CipherText
-  type Decryptor = CipherText => ByteList
-
-  def encrypt(spec : AlgorithmSpec)(plainText : ByteList) : CipherText = {
-    val blockEncryptor : Block => Block = ecbBlock(cipher(Cipher.ENCRYPT_MODE, spec.key))
-    val blocks : List[Block] = plainText.blocks(spec.blockLength, spec.padding)
-    val cipherBlocs = spec.mode match {
-      case ECB => blocks.map(blockEncryptor)
-      case CCB => encryptCcb(blocks, spec.initializationVector, blockEncryptor)
-    }
-    CipherText(cipherBlocs)
+case object ECB extends Algorithm {
+  def apply(key : Key, blocksize : Int = 16, padding : Padding = PKCS7) : SymmetricalBlockEncryptor = {
+    new ECBAlgorithm(key, blocksize, padding)
   }
+}
 
-  def decrypt(spec : AlgorithmSpec)(cipherText: CipherText) : ByteList = {
-    val blockDecryptor : Block => Block = ecbBlock(cipher(Cipher.DECRYPT_MODE, spec.key))
-    val blocks = spec.mode match {
-      case ECB => cipherText.blocks.map(blockDecryptor)
-      case CCB => decryptCcb(cipherText.blocks, spec.initializationVector, blockDecryptor)
-    }
-    ByteList(blocks.map(_.bytes).flatten)
+case object CBC extends Algorithm {
+  def apply(key : Key, initializationVector : Block, blocksize : Int = 16, padding : Padding = PKCS7) : SymmetricalBlockEncryptor = {
+    new CBCAlgorithm(key, initializationVector, blocksize, padding)
   }
+}
 
-  private def ecbBlock(cipher: Cipher)(block: Block) : Block = {
-    Block(cipher.doFinal(block.bytes.toArray).toList)
+case object CTR extends Algorithm {
+  def apply(key : Key, nonce : Block) : SymmetricalBlockEncryptor = {
+    assert(nonce.length == 8)
+    new CTRAlgorithm(key, nonce)
   }
+}
 
-  private def cipher(mode: Int, key: Key) : Cipher = {
+sealed abstract class SymmetricalBlockEncryptor {
+  def encrypt(plainText: ByteList) : CipherText
+  def decrypt(cipherText: CipherText) : ByteList
+
+  protected def blockFunction(key: Key, mode: Int) : Block => Block = {
     val cipher = Cipher.getInstance("AES/ECB/NoPadding")
     cipher.init(mode, key.spec)
-    cipher
+    block : Block => Block(cipher.doFinal(block.bytes.toArray))
+  }
+}
+
+class ECBAlgorithm(key : Key, blockSize: Int, padding: Padding) extends SymmetricalBlockEncryptor  {
+  override def encrypt(plainText: ByteList): CipherText = {
+    plainText.blocks(blockSize, padding).map(blockFunction(key, Cipher.ENCRYPT_MODE))
+  }
+
+  override def decrypt(cipherText: CipherText): ByteList = {
+    cipherText.blocks.map(blockFunction(key, Cipher.DECRYPT_MODE))
+  }
+}
+
+class CBCAlgorithm(key : Key, initializationVector: Block, blockSize: Int, padding: Padding) extends SymmetricalBlockEncryptor {
+  override def encrypt(plainText: ByteList): CipherText = {
+    encryptCcb(plainText.blocks(blockSize, padding), initializationVector, blockFunction(key, Cipher.ENCRYPT_MODE))
+  }
+
+  override def decrypt(cipherText: CipherText): ByteList = {
+    decryptCcb(cipherText.blocks, initializationVector, blockFunction(key, Cipher.DECRYPT_MODE))
   }
 
   private def encryptCcb(blocks: List[Block], initializationVector : Block, blockEncryptor: (Block) => Block) : List[Block] = {
@@ -75,6 +82,49 @@ object Algorithms {
     }
     val decrypted = applyCbcRecursive(initializationVector, Nil, blocks)
     decrypted.reverse
+  }
+}
+
+class CTRAlgorithm(key : Key, nonce : Block) extends SymmetricalBlockEncryptor {
+  override def encrypt(plainText: ByteList): CipherText =
+    ctr(plainText.blocks(16, NoPadding))
+
+  override def decrypt(cipherText: CipherText): ByteList =
+    ctr(cipherText.blocks)
+
+  private def ctr(blocks: List[Block]) : List[Block] =
+    blocks
+      .zip(ctrStream(0))
+      .map(pair => pair._1.xOr(pair._2, true))
+
+
+  private def ctrStream(startAt: Int) : Stream[Block] =
+    Stream
+      .from(0)
+      .map(i => Block(nonce.bytes ::: Helpers.toArrayBuf(i))) // 64 bit unsigned little endian nonce, 64 bit little endian block count (byte count / 16)
+      .map(blockFunction(key, Cipher.ENCRYPT_MODE))
+
+}
+
+
+
+object Algorithms {
+
+  type Encryptor = ByteList => CipherText
+  type Decryptor = CipherText => ByteList
+
+  def transformingPlaintext(encryptor: Encryptor, transformer: ByteList => ByteList) : Encryptor = {
+    byteList: ByteList => {
+      encryptor.apply(transformer.apply(byteList))
+    }
+  }
+
+  def withRandomPrepended(maxLen : Int, encryptor: Encryptor) : Encryptor = {
+    transformingPlaintext(encryptor, byteList => Helpers.randomLengthOfRandomBytes(0, 256) ++ byteList.bytes)
+  }
+
+  def withSecretAppended(secret: ByteList, encryptor: Encryptor) : Encryptor = {
+    transformingPlaintext(encryptor, byteList => byteList.bytes ++ secret.bytes)
   }
 
 }

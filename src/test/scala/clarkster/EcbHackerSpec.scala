@@ -4,65 +4,60 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class EcbHackerSpec extends FlatSpec with Matchers {
 
-  val bytes : Array[Byte] = Array(5, 9, 34, 23, 45, 65, 2, 3, 6, 7, 8, 9, 34, 12, 24, 45, 67, 87, 54).map(_.toByte)
-  val k = Old.randomBytes(8)
+  val bytes : List[Byte] = List(5, 9, 34, 23, 45, 65, 2, 3, 6, 7, 8, 9, 34, 12, 24, 45, 67, 87, 54).map(_.toByte)
+  val encryptor = Algorithms.withSecretAppended(bytes, ECB(Key.random(16)).encrypt)
 
-
-  "Hacker" should "determine block size of 16" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKey(bytes ++ bytes ++ bytes, Old.randomBytes(16))
-    EcbHacker.determineBlockLength(encryptor) shouldBe 16
-  }
-
-  "Hacker" should "determine first Byte" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKey(bytes, Old.randomBytes(16))
+  "Suffix detector" should "determine first Byte" in {
     EcbHacker.decodeNext(Array(), 16, encryptor) shouldBe Some(5.toByte)
   }
 
-  "Hacker" should "determine second Byte" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKey(bytes, Old.randomBytes(16))
+  it should "determine second Byte" in {
     EcbHacker.decodeNext(Array(5).map(_.toByte), 16, encryptor) shouldBe Some(9.toByte)
   }
 
-  "Hacker" should "determine tenth Byte" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKey(bytes, Old.randomBytes(16))
+  it should "determine tenth Byte" in {
     EcbHacker.decodeNext(Array(5, 9, 34, 23, 45, 65, 2, 3, 6).map(_.toByte), 16, encryptor) shouldBe Some(7.toByte)
   }
 
-  "Hacker" should "determine sixteenth Byte" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKey(bytes, Old.randomBytes(16))
+  it should "determine sixteenth Byte" in {
     EcbHacker.decodeNext(Array(5, 9, 34, 23, 45, 65, 2, 3, 6, 7, 8, 9, 34, 12, 24, 45).map(_.toByte), 16, encryptor) shouldBe Some(67.toByte)
   }
 
-  "Hacker" should "determine final Byte" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKey(bytes, Old.randomBytes(16))
+  it should "determine final Byte" in {
     EcbHacker.decodeNext(Array(5, 9, 34, 23, 45, 65, 2, 3, 6, 7, 8, 9, 34, 12, 24, 45, 67, 87).map(_.toByte), 16, encryptor) shouldBe Some(54.toByte)
   }
 
-  "Hacker" should "end after final Byte" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKey(bytes, Old.randomBytes(16))
+  it should "get pad char after final Byte" in {
     EcbHacker.decodeNext(Array(5, 9, 34, 23, 45, 65, 2, 3, 6, 7, 8, 9, 34, 12, 24, 45, 67, 87, 54).map(_.toByte), 16, encryptor) shouldBe Some(1)
   }
 
-  "Hacker" should "end after final Byt2e" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKey(bytes, Old.randomBytes(16))
+  it should "end after pad char after final Byte" in {
     EcbHacker.decodeNext(Array(5, 9, 34, 23, 45, 65, 2, 3, 6, 7, 8, 9, 34, 12, 24, 45, 67, 87, 54, 1).map(_.toByte), 16, encryptor) shouldBe None
   }
 
-  "Hacker" should "remove random prefix" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKeyWithRandom(bytes, Old.randomBytes(16))
-    val encryptorWithoutRandom = EcbHacker.randomPrefixRemovingEncryptor(16, encryptor)
-    EcbHacker.decodeNext(Array(), 16, encryptorWithoutRandom) shouldBe None
+
+  it should "Determine whole suffix" in {
+    EcbHacker.crackEncryptor(encryptor) shouldBe bytes
   }
 
-  "Hacker" should "remove random prefix 2" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKeyWithRandom(bytes, Old.randomBytes(16))
-    val encryptorWithoutRandom = EcbHacker.randomPrefixRemovingEncryptor(16, encryptor)
+
+  val encryptorWithRandom = Algorithms.withRandomPrepended(16, encryptor)
+
+
+  "Prefix Remover" should "remove random prefix" in {
+    val withoutRandom = EcbHacker.randomPrefixRemovingEncryptor(16, encryptorWithRandom)
+    val original = encryptor.apply(bytes)
+    val removed = withoutRandom.apply(bytes)
+    original.hex shouldBe removed.hex
+  }
+
+  it should "remove random prefix 2" in {
+    val encryptorWithoutRandom = EcbHacker.randomPrefixRemovingEncryptor(16, encryptorWithRandom)
     EcbHacker.decodeNext(Array(5, 9, 34, 23, 45, 65, 2, 3, 6, 7, 8, 9, 34, 12, 24, 45).map(_.toByte), 16, encryptorWithoutRandom) shouldBe Some(67.toByte)
   }
 
-  "Hacker" should "hack" in {
-    val encryptor : EcbHacker.Encryptor = EcbHacker.ecbEncryptorForTextAndKeyWithRandom(bytes, Old.randomBytes(16))
-    assert(EcbHacker.crackEncryptorWithRandomPrefix(encryptor).toList == bytes.toList)
+  it should "determine suffix" in {
+    assert(EcbHacker.crackEncryptorWithRandomPrefix(encryptorWithRandom).toList == bytes.toList)
   }
 
 }

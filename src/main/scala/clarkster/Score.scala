@@ -16,4 +16,18 @@ object Score {
   def score(msg : String): Int = {
     msg.toLowerCase.toCharArray.foldLeft(0)((score, char) => score + scoreChar(char))
   }
+
+
+  def decodeAgainstSingleChar(bytes: ByteList) : Seq[(Byte, String, Int)] = {
+    Helpers.eachByte.map { b =>
+      val decode = bytes.xOrRepeating(List(b))
+      val str = Helpers.bytesToString(decode.bytes)
+      (b, str, Score.score(str))
+    }
+  }
+
+  def bestSingleChar(msg : ByteList) : (Byte, String, Int) = {
+    decodeAgainstSingleChar(msg).maxBy(_._3)
+  }
+
 }

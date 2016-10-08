@@ -19,8 +19,12 @@ object Key {
     apply(str.getBytes.toList, str.length, NoPadding)
   }
 
+  def apply(bytes: Seq[Byte]): Key = {
+    apply(bytes.toList, bytes.size, NoPadding)
+  }
+
   def random(i: Int) : Key = {
-    new Key(Old.randomBytes(16).toList)
+    new Key(Helpers.randomBytes(16))
   }
 
 }

@@ -10,5 +10,5 @@ object CipherText {
   def fromBase64(s: String, blockSize : Int) =
     CipherText(Base64.decode(s).bytes.grouped(blockSize).map(Block(_)).toList)
 
-  def apply(blocks : List[Block]) = new CipherText(blocks)
+  implicit def apply(blocks : List[Block]) = new CipherText(blocks)
 }

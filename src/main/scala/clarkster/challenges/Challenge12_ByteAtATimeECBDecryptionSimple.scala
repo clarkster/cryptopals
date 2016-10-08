@@ -10,10 +10,7 @@ object Challenge12_ByteAtATimeECBDecryptionSimple extends Challenge {
       |
       |Now take that same function and have it append to the plaintext, BEFORE ENCRYPTING, the following string:
       |
-      |Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
-      |aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
-      |dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
-      |YnkK
+
       |Spoiler alert.
       |Do not decode this string now. Don't do it.
       |
@@ -36,17 +33,18 @@ object Challenge12_ByteAtATimeECBDecryptionSimple extends Challenge {
       |This is the first challenge we've given you whose solution will break real crypto. Lots of people know that when you encrypt something in ECB mode, you can see penguins through it. Not so many of them can decrypt the contents of those ciphertexts, and now you can. If our experience is any guideline, this attack will get you code execution in security tests about once a year.
     """.stripMargin
 
-  override def main(args: Array[String]): Unit = ???
-//    val encryptorSpec = AlgorithmSpec(mode = ECB, key = Key.random(16))
-//    val encryptor = Algorithms.encrypt(encryptorSpec)
-//    val ecbEncrpytor: Encryptor = ecbEncryptorForTextAndKey(secretBytes.bytes.toArray, fixedSecretKey)
-//
-//    def ecbEncryptorForTextAndKey(secretText: Array[Byte], secretKey: Array[Byte])(plaintext: Array[Byte]): List[Byte] = {
-//      val input = plaintext ++ secretText
-//      Old.encryptEcb(input, secretKey).toList
-//    }
-//
-//    val withPrefix : Algorithms.Encryptor = ByteList => encryptor.apply(_)
-//    println (Helpers.bytesToString(EcbHacker.crackEncryptor(EcbHacker.ecbEncrpytor)))
-//  }
+  override def main(args: Array[String]): Unit = {
+    val secretText =
+      """
+        |Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
+        |aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
+        |dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
+        |YnkK
+      """.stripMargin
+
+    val encryptorWithPrefix = Algorithms.withSecretAppended(ByteList.fromBase64(secretText), ECB(Key.random(16)).encrypt)
+
+    val decryptedPrefix : ByteList = EcbHacker.crackEncryptor(encryptorWithPrefix)
+    println(decryptedPrefix.ascii)
+  }
 }
