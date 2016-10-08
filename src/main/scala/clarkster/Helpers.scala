@@ -1,7 +1,6 @@
 package clarkster
 
 import scala.annotation.tailrec
-import scala.util.Random
 
 object Helpers {
 
@@ -29,10 +28,10 @@ object Helpers {
     hexString grouped (2) map (charPair => Integer.parseInt(charPair, 16) toByte) toList
   }
 
-  def randomBytes(len : Int) : List[Byte] = List.fill(len)(Random.nextInt(256)) map (_.toByte)
-  def randomLengthOfRandomBytes(minLen : Int, maxLen: Int) : List[Byte] = randomBytes(Random.nextInt(maxLen - minLen) + minLen)
+  def randomBytes(len : Int) : List[Byte] = List.fill(len)(scala.util.Random.nextInt(256)) map (_.toByte)
+  def randomLengthOfRandomBytes(minLen : Int, maxLen: Int) : List[Byte] = randomBytes(scala.util.Random.nextInt(maxLen - minLen) + minLen)
 
-  randomBytes(Random.nextInt(6) + 5)
+  randomBytes(scala.util.Random.nextInt(6) + 5)
 
   val hexChars = "0123456789abcdef"
 
