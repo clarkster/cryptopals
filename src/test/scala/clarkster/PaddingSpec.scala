@@ -1,5 +1,7 @@
 package clarkster
 
+import java.nio.ByteBuffer
+
 import org.scalatest.{FlatSpec, Matchers}
 
 class PaddingSpec extends FlatSpec with Matchers {
@@ -26,5 +28,38 @@ class PaddingSpec extends FlatSpec with Matchers {
   it should "reject invalid unpadding" in {
     val data = ByteList("YELLOW SUBMARI".getBytes :+ 3.toByte :+ 2.toByte)
     an [IllegalArgumentException] should be thrownBy PKCS7.unpad(data)
+  }
+
+  "Short string" should "Sha pad to correct length" in {
+    SHA1Padding.pad(64, ByteList.copies(55, 'A')).length shouldBe 64
+  }
+
+  "64 Byte String" should "Sha pad to correct length" in {
+    SHA1Padding.pad(64, ByteList.copies(64, 'A')).length shouldBe 128
+  }
+
+  "Long string" should "Sha pad to correct length" in {
+    SHA1Padding.pad(64, ByteList.copies(543534, 'A')).length % 64 shouldBe 0
+  }
+
+  it should "Contain original data" in {
+    SHA1Padding.pad(64, ByteList.copies(543534, 'A')).bytes.indexOfSlice(ByteList.copies(543534, 'A').bytes) shouldBe 0
+  }
+
+  it should "Contain length" in {
+    val padded = SHA1Padding.pad(64, ByteList.copies(543534, 'A'))
+    val lastBytes = padded.bytes.slice(padded.length - 8, padded.length)
+    ByteBuffer.wrap(lastBytes.toArray).asLongBuffer().get() shouldBe 543534 * 8
+  }
+
+  it should "Contain marker" in {
+    val padded = SHA1Padding.pad(64, ByteList.copies(543534, 'A'))
+    padded.bytes(543534) shouldBe 0x80.toByte
+  }
+
+  it should "Contain filler" in {
+    val padded = SHA1Padding.pad(64, ByteList.copies(543534, 'A'))
+    padded.bytes(543535) shouldBe 0x00
+    padded.bytes(543536) shouldBe 0x00
   }
 }

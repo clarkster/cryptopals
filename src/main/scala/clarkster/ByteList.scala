@@ -33,12 +33,12 @@ object ByteList {
 
   implicit def apply(bytes : Array[Byte]) : ByteList = new ByteList(bytes.toList)
   implicit def apply(bytes : Seq[Byte]) : ByteList = new ByteList(bytes.toList)
-  implicit def apply(blocks : List[Block]) : ByteList = new ByteList(blocks.map(_.bytes).flatten)
+  implicit def apply(blocks : List[Block]) : ByteList = new ByteList(blocks.flatMap(_.bytes))
 
   def copies(length: Int, byte: Int) = new ByteList(List.fill(length)(byte.toByte))
 
   def fromHex(hex: String) = new ByteList(Helpers.hexToBytes(hex))
   def fromBase64(base64: String) = Base64.decode(base64)
-  def fromAscii(str: String) = apply(str.getBytes)
+  def fromAscii(str: String) = apply(str.map(c => c.toByte))
 
 }
