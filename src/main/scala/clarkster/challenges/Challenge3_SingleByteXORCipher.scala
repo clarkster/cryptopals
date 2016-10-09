@@ -24,7 +24,7 @@ object Challenge3_SingleByteXORCipher extends Challenge {
     val tester = ByteList.fromHex("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
 
     val (char, decoded, score) = Score.bestSingleChar(tester)
-    println(s"Decoded test string. Best single byte is ${char} with a score of ${score}. Decoded message is:")
+    println(s"Decoded test string. Best single byte is $char with a score of $score. Decoded message is:")
     println(decoded)
   }
 }

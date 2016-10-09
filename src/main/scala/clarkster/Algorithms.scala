@@ -25,6 +25,12 @@ case object CTR extends Algorithm {
   }
 }
 
+case object MT19937 extends Algorithm {
+  def apply(seed: Short) : SymmetricalBlockEncryptor = {
+    new MT19937Algorithm(seed)
+  }
+}
+
 sealed abstract class SymmetricalBlockEncryptor {
   def encrypt(plainText: ByteList) : CipherText
   def decrypt(cipherText: CipherText) : ByteList
@@ -95,7 +101,7 @@ class CTRAlgorithm(key : Key, nonce : Block) extends SymmetricalBlockEncryptor {
   private def ctr(blocks: List[Block]) : List[Block] =
     blocks
       .zip(ctrStream(0))
-      .map(pair => pair._1.xOr(pair._2, true))
+      .map(pair => pair._1.xOr(pair._2, truncateToShortest = true))
 
 
   private def ctrStream(startAt: Int) : Stream[Block] =
@@ -106,6 +112,25 @@ class CTRAlgorithm(key : Key, nonce : Block) extends SymmetricalBlockEncryptor {
 
 }
 
+class MT19937Algorithm(seed : Short) extends SymmetricalBlockEncryptor {
+  override def encrypt(plainText: ByteList): CipherText =
+    CipherText(mt19937(plainText.bytes))
+
+  override def decrypt(cipherText: CipherText): ByteList =
+    mt19937(cipherText.bytes)
+
+  private def mt19937(bytes: List[Byte]) : List[Block] =
+    bytes
+      .zip(mt19937Stream)
+      .map(pair => Block(List(Helpers.xOrByte(pair._1, pair._2))))
+
+
+  private def mt19937Stream : Stream[Byte] = {
+    val rng = Random(seed)
+    Stream
+      .continually(rng.extract_number.toByte)
+  }
+}
 
 
 object Algorithms {

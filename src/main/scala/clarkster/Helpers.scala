@@ -7,7 +7,7 @@ object Helpers {
   def hammingDistance(array1: Block, array2: Block) : Int = {
     require(array1.length == array2.length)
 
-    array1.bytes zip(array2.bytes) map {
+    array1.bytes zip array2.bytes map {
       case (b1, b2) => numberOfBitsSet(b1 ^ b2 toByte)
     } sum
   }
@@ -19,7 +19,7 @@ object Helpers {
 
   def gcd(numbers: Seq[Int]): Int = numbers.reduce(gcd)
 
-  def eachByte() = (0 to 255) map (_.toByte)
+  def eachByte = (0 to 255) map (_.toByte)
 
   def bytesToString(bytes: Seq[Byte]) = bytes map(_.toChar) mkString
 

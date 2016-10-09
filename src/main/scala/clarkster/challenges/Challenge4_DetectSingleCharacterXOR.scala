@@ -21,7 +21,7 @@ object Challenge4_DetectSingleCharacterXOR extends Challenge {
       line => (line, Score.bestSingleChar(ByteList.fromHex(line)))
     )
     val (original, (char, msg, score)) = charNStr.maxBy(_._2._3)
-    println(s"Found single byte XOR. Character ${char}, score ${score}")
+    println(s"Found single byte XOR. Character $char, score $score")
     println("Original text")
     println(original)
     println("Decoded to")

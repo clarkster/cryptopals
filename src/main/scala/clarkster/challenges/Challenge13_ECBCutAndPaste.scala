@@ -42,19 +42,19 @@ object Challenge13_ECBCutAndPaste extends Challenge {
 
   override def main(args: Array[String]): Unit = {
     def parse(str : String) : Map[String, String] = {
-      str split('&') map(str => str.split("=")) map(pair => pair(0) -> pair(1)) toMap
+      str split '&' map(str => str.split("=")) map(pair => pair(0) -> pair(1)) toMap
     }
 
     def profileFor(str : String) : String = {
       encodeProfile(Map(
-        ("email" -> str),
-        ("uid" -> "10"),
-        ("role" -> "user")
+        "email" -> str,
+        "uid" -> "10",
+        "role" -> "user"
       ))
     }
 
     def encodeProfile(profile : Map[String, String]) : String =  {
-      return profile mapValues(_.replaceAll("&=", "")) map(pair => pair._1 + "=" + pair._2) mkString "&"
+      profile mapValues(_.replaceAll("&=", "")) map(pair => pair._1 + "=" + pair._2) mkString "&"
     }
 
     val ecb = ECB(Key.random(16))
@@ -72,15 +72,13 @@ object Challenge13_ECBCutAndPaste extends Challenge {
     }
 
     val profile1 = encryptProfileFor("JoeBloggs@test.com")
-
-    val t2 = decryptProfileFor(profile1.blocks ++ profile1.blocks)
-
+     d
     val blockSize = Oracle.detectECBBlockSize(encryptor)
     println(
       s"""
         |Regular user, decrypts to " + ${decryptProfileFor(profile1)}
         |Then analysing the individual blocks:
-        |Block size is " + ${blockSize}
+        |Block size is " + $blockSize
         |There's a 6 byte prefix (for email=), then our text, then a 18 byte suffix (for &uid=10&role=user)
         |So by using an email of length 13, and encrypting it, we will force user into a block of its own
         |2x16 byte crypto blocks for the preamble, and 1xblock of crypto(user) - padded

@@ -20,7 +20,7 @@ class Random {
   def seed_mt(seed : Int) {
     index = n
     MT(0) = seed
-    for (i <- 1 to n - 1)
+    for (i <- 1 until n)
       MT(i) = f * (MT(i-1) ^ (MT(i-1) >> (w-2))) + i
   }
 

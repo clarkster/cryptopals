@@ -116,8 +116,8 @@ object Challenge19_BreakFixedNonceCTRModeUsingSubstitutions extends Challenge {
         |QSB0ZXJyaWJsZSBiZWF1dHkgaXMgYm9ybi4=
       """.stripMargin
         .lines
-        .map(ByteList.fromBase64(_))
-        .map(ctr.encrypt(_))
+        .map(ByteList.fromBase64)
+        .map(ctr.encrypt)
         .toList
 
 
@@ -138,20 +138,20 @@ object Challenge19_BreakFixedNonceCTRModeUsingSubstitutions extends Challenge {
       commonWord <- commonWords
       cipher <- cipherTexts
       if cipher.bytes.indexOfSlice(commonWordEncryptedAtPos(commonWord, pos)) == pos
-      i <- 0 to commonWord.length - 1
+      i <- 0 until commonWord.length
     }
       yield (pos + i, (cipher.bytes(pos + i) ^ commonWord.charAt(i).toByte).toByte)
 
 
     // Collapse the tuples to produce the keystream
-    val keyStream: Array[Byte] = guessedKeyStreamBytes2.foldLeft(Array.fill(strLen)(0.toByte))((l: Array[Byte], pair: Tuple2[Int, Byte]) => {
+    val keyStream: Array[Byte] = guessedKeyStreamBytes2.foldLeft(Array.fill(strLen)(0.toByte))((l: Array[Byte], pair: (Int, Byte)) => {
       l.update(pair._1, pair._2)
       l
     })
 
 
     println("Detected keystream. The list of decoded texts follows...")
-    cipherTexts.foreach(cipherText => println(Helpers.bytesToString(Helpers.xOr(cipherText.bytes, keyStream.toList, true))))
+    cipherTexts.foreach(cipherText => println(Helpers.bytesToString(Helpers.xOr(cipherText.bytes, keyStream.toList, truncateToShortest = true))))
 
     println("Should be close enough - we don't quite get the last bytes, and with some more brute forcing we probably could")
   }

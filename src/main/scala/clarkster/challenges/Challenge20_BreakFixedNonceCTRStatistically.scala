@@ -24,8 +24,8 @@ object Challenge20_BreakFixedNonceCTRStatistically extends Challenge {
     val ctr = CTR(Key.random(16), Block.copies(8, 0))
 
     val ciphers = Source.fromURL(getClass.getResource("/test20.txt")).getLines()
-      .map(ByteList.fromBase64(_))
-      .map(ctr.encrypt(_))
+      .map(ByteList.fromBase64)
+      .map(ctr.encrypt)
       .toList
 
     val commonCipherLen = ciphers.minBy(_.length).length

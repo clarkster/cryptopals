@@ -42,16 +42,16 @@ object Base64 {
     base64.length - padLength
   }
 
-  private def encode(int: Int) : Byte =
-    base64Chars charAt(int) toByte
+  private def encode(i: Int) : Byte =
+    base64Chars charAt i toByte
 
-  private def decode(byte: Byte) : Byte =
-    if (byte == pad) 0 else base64Chars indexOf (byte) toByte
+  private def decode(b: Byte) : Byte =
+    if (byte == pad) 0 else base64Chars indexOf b toByte
 
 
   private def threeToFour(threeBytes: Seq[Byte]) : Array[Int] = {
     // current 3 bytes as a 24 bit value. The 'lift' allows us to have missing elements for elements 1 or 2
-    val group24 = (threeBytes(0) << 16) | (threeBytes(1) << 8) | threeBytes(2)
+    val group24 = (threeBytes.head << 16) | (threeBytes(1) << 8) | threeBytes(2)
     Array(
       (group24 >> 18) & 0x3F,
       (group24 >> 12) & 0x3F,

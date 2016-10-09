@@ -32,7 +32,7 @@ object Oracle {
   private def guessHammingDistance(bytes: ByteList, keysize: Int) : Double = {
     val grouped = bytes.blocks(keysize, PKCS7) take 4
     val distances = for {s1 <- grouped
-                         s2 <- grouped if (s1 != s2)}
+                         s2 <- grouped if s1 != s2}
       yield Helpers.hammingDistance(s1, s2).toDouble / keysize
     distances.sum / distances.length
   }

@@ -99,10 +99,10 @@ object Challenge17_CBCPaddingOracle extends Challenge {
 
     // Wording of the challenge wasn't quite clear - as a hacker, have we obtained the IV too?  If so, we can
     // get to the first block of plain text
-    val firstBlock = determineBlock(iv, cipherText.blocks(0))
+    val firstBlock = determineBlock(iv, cipherText.blocks.head)
 
     // Otherwise we can get to all except the first
-    val decrypted = cipherText.blocks.sliding(2, 1).map(blocks => determineBlock(blocks(0), blocks(1))).mkString
+    val decrypted = cipherText.blocks.sliding(2, 1).map(blocks => determineBlock(blocks.head, blocks(1))).mkString
 
     println(firstBlock + decrypted)
 

@@ -71,7 +71,7 @@ object Challenge16_CBCBitflippingAttacks extends Challenge {
     println("Rogue encrypted profile, with same bits flipped in the probe crypto block")
     val rogueProfile : CipherText = CipherText(preamble ::: List(remainder.head.xOr(flipper)) ::: remainder.tail)
 
-    assert(isAdmin(rogueProfile) == true)
+    assert(isAdmin(rogueProfile))
     println("And we're successfully admin")
   }
 }

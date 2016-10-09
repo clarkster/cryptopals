@@ -25,15 +25,15 @@ class ByteList(val bytes : List[Byte]) extends Bytes[ByteList] {
   override def cons(data : List[Byte]) : ByteList = new ByteList(data)
 
   def blocks(blockSize : Int, padding: Padding) : List[Block] = {
-    padding.pad(blockSize, this).bytes grouped(blockSize) map(Block(_)) toList
+    padding.pad(blockSize, this).bytes grouped blockSize map(Block(_)) toList
   }
 }
 
 object ByteList {
 
-  implicit def apply(bytes : Array[Byte]) = new ByteList(bytes.toList)
-  implicit def apply(bytes : Seq[Byte]) = new ByteList(bytes.toList)
-  implicit def apply(blocks : List[Block]) = new ByteList(blocks.map(_.bytes).flatten)
+  implicit def apply(bytes : Array[Byte]) : ByteList = new ByteList(bytes.toList)
+  implicit def apply(bytes : Seq[Byte]) : ByteList = new ByteList(bytes.toList)
+  implicit def apply(blocks : List[Block]) : ByteList = new ByteList(blocks.map(_.bytes).flatten)
 
   def copies(length: Int, byte: Int) = new ByteList(List.fill(length)(byte.toByte))
 
