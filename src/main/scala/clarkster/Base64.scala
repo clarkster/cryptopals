@@ -46,7 +46,7 @@ object Base64 {
     base64Chars charAt i toByte
 
   private def decode(b: Byte) : Byte =
-    if (byte == pad) 0 else base64Chars indexOf b toByte
+    if (b == pad) 0 else base64Chars indexOf b toByte
 
 
   private def threeToFour(threeBytes: Seq[Byte]) : Array[Int] = {

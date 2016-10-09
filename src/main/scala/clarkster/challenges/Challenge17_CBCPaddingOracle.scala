@@ -83,7 +83,7 @@ object Challenge17_CBCPaddingOracle extends Challenge {
     def determineBlock(prevBlock : Block, currentBlock : Block): String = {
       var intermediateState: List[Byte] = List()
       for (i <- 1 to 16) {
-        val found = Helpers.eachByte().find(b => {
+        val found = Helpers.eachByte.find(b => {
           val start: List[Byte] = List.fill(16 - i)('A'.toByte) :+ b
           val ending: List[Byte] = intermediateState.map(b => (b ^ i).toByte)
           val block = Block(start ::: ending)

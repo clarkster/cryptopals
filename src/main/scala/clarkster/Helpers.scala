@@ -1,6 +1,9 @@
 package clarkster
 
+import clarkster.challenges.Challenge25_BreakRandomAccessReadWriteAESCTR._
+
 import scala.annotation.tailrec
+import scala.io.Source
 
 object Helpers {
 
@@ -56,6 +59,10 @@ object Helpers {
 
   def dump(n: Int, digits: Int = 32): String = {
     String.format("%" + digits + "s", n.toBinaryString).replace(' ', '0')
+  }
+
+  def testFile(testNo: Int) = {
+    Source.fromURL(getClass.getResource("/test" + testNo + ".txt"))
   }
 
   implicit def intWithTimes(n : Int) = new {

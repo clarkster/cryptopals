@@ -72,7 +72,6 @@ object Challenge13_ECBCutAndPaste extends Challenge {
     }
 
     val profile1 = encryptProfileFor("JoeBloggs@test.com")
-     d
     val blockSize = Oracle.detectECBBlockSize(encryptor)
     println(
       s"""

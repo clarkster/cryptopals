@@ -13,5 +13,8 @@ object CipherText {
   def fromHex(s: String, blockSize : Int) =
     CipherText(Helpers.hexToBytes(s).grouped(blockSize).map(Block(_)).toList)
 
-  implicit def apply(blocks : List[Block]) = new CipherText(blocks)
+  def fromBytes(bytes: List[Byte], blockSize : Int) =
+    CipherText(bytes.grouped(blockSize).map(Block(_)).toList)
+
+  implicit def apply(blocks : List[Block]) : CipherText = new CipherText(blocks)
 }

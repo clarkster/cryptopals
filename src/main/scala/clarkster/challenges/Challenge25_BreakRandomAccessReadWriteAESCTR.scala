@@ -1,5 +1,9 @@
 package clarkster.challenges
 
+import clarkster._
+
+import scala.io.Source
+
 object Challenge25_BreakRandomAccessReadWriteAESCTR extends Challenge {
   override val number: Int = 25
   override val desc: String =
@@ -18,6 +22,25 @@ object Challenge25_BreakRandomAccessReadWriteAESCTR extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
+    val source = CipherText.fromBase64(Helpers.testFile(number).getLines().mkString, 16)
+    val ecb = ECB(Key("YELLOW SUBMARINE"))
+    val plainText = ecb.decrypt(source)
 
+    val ctr = CTR(Key.random(16), Block.random(8))
+    val cipher = ctr.encrypt(plainText)
+
+    def edit(cipherText : CipherText, offset : Int, newText : ByteList) : CipherText = {
+      val plainText = ctr.decrypt(cipherText)
+      val edited = plainText.bytes.take(offset) ++ newText.bytes ++ plainText.bytes.takeRight(plainText.length - offset - newText.bytes.length)
+      ctr.encrypt(edited)
+    }
+
+    val knownText = ByteList.copies(cipher.length, 0)
+    val knownCipher = edit(cipher, 0, knownText) // seems too easy to replace the whole thing, am I missing something?
+    val ctrStream = Helpers.xOr(knownCipher.bytes, knownText.bytes)
+
+    val decrypted = Helpers.xOr(cipher.bytes, ctrStream)
+    println("Decrypted CTR by using some known text to get the stream...")
+    println(Helpers.bytesToString(decrypted))
   }
 }
