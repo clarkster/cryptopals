@@ -25,7 +25,7 @@ object Helpers {
 
   def hexToBytes(hexString : String) : List[Byte] = {
     require(hexString.length % 2 == 0)
-    hexString grouped (2) map (charPair => Integer.parseInt(charPair, 16) toByte) toList
+    hexString grouped 2 map (charPair => Integer.parseInt(charPair, 16) toByte) toList
   }
 
   def randomBytes(len : Int) : List[Byte] = List.fill(len)(scala.util.Random.nextInt(256)) map (_.toByte)
@@ -36,7 +36,7 @@ object Helpers {
   val hexChars = "0123456789abcdef"
 
   def bytesToHex(bytes: Seq[Byte]) = {
-    bytes flatMap(b => Array((b & 0xf0) >> 4, b & 0xf)) map(byteToHex) mkString("")
+    bytes flatMap(b => Array((b & 0xf0) >> 4, b & 0xf)) map byteToHex mkString ""
   }
 
   private def byteToHex(int: Int) = hexChars.charAt(int)
@@ -45,13 +45,18 @@ object Helpers {
 
   def xOr(array1: List[Byte], array2: List[Byte], truncateToShortest : Boolean = false) : List[Byte] = {
     require(truncateToShortest || array1.length == array2.length)
-    array1 zip(array2) map {
+    array1 zip array2 map {
       case (b1, b2) => xOrByte(b1, b2)
     }
   }
 
   // Convert a Long to its big-endian byte representation. e.g. 1 -> (1, 0, 0, 0, 0, 0, 0, 0)
   def toArrayBuf(x: Long): List[Byte] = Range(0, 8).map(i => ((x >>> (i << 3)) & 0xFF).toByte).toList
+
+
+  def dump(n: Int, digits: Int = 32): String = {
+    String.format("%" + digits + "s", n.toBinaryString).replace(' ', '0')
+  }
 
   implicit def intWithTimes(n : Int) = new {
     def times(f : => Unit) = 1 to n foreach(_ => f)
