@@ -57,7 +57,7 @@ class EcbHackerSpec extends FlatSpec with Matchers {
   }
 
   it should "determine suffix" in {
-    assert(EcbHacker.crackEncryptorWithRandomPrefix(encryptorWithRandom).toList == bytes.toList)
+    assert(EcbHacker.crackEncryptorWithRandomPrefix(encryptorWithRandom).toList == bytes)
   }
 
 }

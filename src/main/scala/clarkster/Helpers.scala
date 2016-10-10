@@ -1,11 +1,14 @@
 package clarkster
 
+import java.nio.ByteOrder
+
 import clarkster.challenges.Challenge25_BreakRandomAccessReadWriteAESCTR._
 
 import scala.annotation.tailrec
 import scala.io.Source
 
 object Helpers {
+  def leftShift(num : Int, cnt : Int) : Int = (num << cnt) | (num >>> (32 - cnt))
 
   def hammingDistance(array1: Block, array2: Block) : Int = {
     require(array1.length == array2.length)
@@ -63,6 +66,18 @@ object Helpers {
 
   def testFile(testNo: Int) = {
     Source.fromURL(getClass.getResource("/test" + testNo + ".txt"))
+  }
+
+  def intsToBytes(ints: Int*) : List[Byte] = {
+    val bb = java.nio.ByteBuffer.allocate(ints.size * 4)
+    bb.asIntBuffer().put(ints.toArray)
+    bb.array().toList
+  }
+  def intsToBytesLittleEndian(ints: Int*) : List[Byte] = {
+    val bb = java.nio.ByteBuffer.allocate(ints.size * 4)
+    bb.order(ByteOrder.LITTLE_ENDIAN)
+    bb.asIntBuffer().put(ints.toArray)
+    bb.array().toList
   }
 
   implicit def intWithTimes(n : Int) = new {

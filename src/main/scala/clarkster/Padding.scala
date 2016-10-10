@@ -1,6 +1,6 @@
 package clarkster
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 
 sealed abstract class Padding {
   def pad : (Int, ByteList) => ByteList
@@ -33,23 +33,33 @@ case object PKCS7 extends Padding {
   }
 }
 
-case object SHA1Padding extends Padding {
+abstract class MessagePadding(order : ByteOrder) extends Padding {
+  private def blanks(len : Int) = {
+    val K : Int = (56 - len - 1) % 64
+    val KPrime = if (K > 0) K else K + 64
+    val blanks = List.fill(KPrime)(0.toByte)
+    0x80.toByte :: blanks
+  }
+
+  private def lengthChars(len : Int) = {
+    val bitLength = ByteBuffer.allocate(8)
+    bitLength.order(order)
+    bitLength.asLongBuffer().put(0, len * 8)
+    bitLength.array().toList
+  }
+
+  def padChars(len: Int) = {
+    blanks(len) ++ lengthChars(len)
+  }
+
   override def pad = (blockSize: Int, bytes : ByteList) => {
     assert(blockSize == 64)
-    val len = bytes.length * 8 // message length in bits (always a multiple of the number of bits in a character).
-
-    //    Pre-processing:
-    //    append the bit '1' to the message e.g. by adding 0x80 if message length is a multiple of 8 bits.
-    //  append 0 ≤ k < 512 bits '0', such that the resulting message length in bits
-    //    is congruent to −64 ≡ 448 (mod 512)
-    //  append ml, in a 64-bit big-endian integer. Thus, the total length is a multiple of 512 bits.
-
-    val blanks = List.fill((56 - (bytes.length + 1) % 64) % 64)(0.toByte)
-    val lengthAsBigEndian = ByteBuffer.allocate(8)
-    lengthAsBigEndian.asLongBuffer().put(0, len)
-
-    (bytes.bytes :+ 0x80.toByte) ::: blanks ::: lengthAsBigEndian.array().toList
+    bytes.bytes ++ padChars(bytes.length)
   }
 
   override def unpad: (ByteList) => ByteList = ???
+
 }
+
+case object SHA1Padding extends MessagePadding(ByteOrder.BIG_ENDIAN)
+case object MD4Padding extends MessagePadding(ByteOrder.LITTLE_ENDIAN)

@@ -31,8 +31,17 @@ class PaddingSpec extends FlatSpec with Matchers {
   }
 
   "Short string" should "Sha pad to correct length" in {
-    SHA1Padding.pad(64, ByteList.copies(55, 'A')).length shouldBe 64
+    SHA1Padding.pad(64, ByteList.copies(55, 'A')).length shouldBe 128
   }
+
+  "63 Byte String" should "Sha pad to correct length" in {
+    SHA1Padding.pad(64, ByteList.copies(63, 'A')).length shouldBe 128
+  }
+
+  "63 Byte String" should "MD4 pad to correct length" in {
+    MD4Padding.pad(64, ByteList.copies(63, 'A')).length shouldBe 128
+  }
+
 
   "64 Byte String" should "Sha pad to correct length" in {
     SHA1Padding.pad(64, ByteList.copies(64, 'A')).length shouldBe 128
@@ -61,5 +70,13 @@ class PaddingSpec extends FlatSpec with Matchers {
     val padded = SHA1Padding.pad(64, ByteList.copies(543534, 'A'))
     padded.bytes(543535) shouldBe 0x00
     padded.bytes(543536) shouldBe 0x00
+  }
+
+  "SHA1" should "Pad correctly" in {
+    SHA1Padding.pad(64, ByteList.fromAscii("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")).length shouldBe 128
+  }
+
+  "MD4" should "Pad correctly" in {
+    MD4Padding.pad(64, ByteList.fromAscii("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")).length shouldBe 128
   }
 }

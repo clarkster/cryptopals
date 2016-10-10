@@ -1,6 +1,6 @@
 package clarkster.challenges
 
-import clarkster.{ByteList, Key, SHA1}
+import clarkster._
 
 object Challenge28_ImplementAnSHA1KeyedMac extends Challenge {
   override val number: Int = 28
@@ -18,16 +18,15 @@ object Challenge28_ImplementAnSHA1KeyedMac extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    def sha1WithKey(key : Key, message : ByteList) = {
-      SHA1(key.bytes ++ message.bytes)
-    }
 
-    val valid = sha1WithKey(Key("Yellow Submarine"), ByteList.fromAscii("My Secret Message"))
-    val tampered = sha1WithKey(Key("Yellow Submarine"), ByteList.fromAscii("My Secret Massage"))
+    val withKey = SHA.withKey(Key("Yellow Submarine"))
+
+    val valid = withKey.sign(ByteList.fromAscii("My Secret Message"))
+    val tampered = withKey.sign(ByteList.fromAscii("My Secret Massage"))
 
     assert(valid != tampered)
 
-    val tampered2 = sha1WithKey(Key("Yellow Wubmarine"), ByteList.fromAscii("My Secret Message"))
+    val tampered2 = SHA.withKey(Key("Yellow Wubmarine")).sign(ByteList.fromAscii("My Secret Message"))
 
     assert(valid != tampered2)
     println("Validated SHA1")
