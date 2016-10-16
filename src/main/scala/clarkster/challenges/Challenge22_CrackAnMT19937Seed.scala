@@ -1,6 +1,6 @@
 package clarkster.challenges
 
-import clarkster.Random
+import clarkster._
 
 object Challenge22_CrackAnMT19937Seed extends Challenge {
   override val number: Int = 22
@@ -23,14 +23,14 @@ object Challenge22_CrackAnMT19937Seed extends Challenge {
   override def main(args: Array[String]): Unit = {
     val seed = System.currentTimeMillis().toInt - (scala.util.Random.nextInt(60) + 40)
     println("Rnd seed " + seed)
-    val rnd = Random(seed).extract_number
+    val rnd = RandomNumber.seed(seed).next._1
 
     println("Not quite sure if this is intention or not. We start guessing seeds based on the current time and work backwards until one matches")
 
     val testSeeds = Stream.iterate(System.currentTimeMillis().toInt)(_ - 1)
 
     val found = testSeeds.find(i => {
-      Random(i).extract_number == rnd
+      RandomNumber.seed(i).next._1 == rnd
     })
 
     assert(found.get == seed)

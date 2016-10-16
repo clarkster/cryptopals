@@ -18,15 +18,15 @@ object Score {
   }
 
 
-  def decodeAgainstSingleChar(bytes: ByteList) : Seq[(Byte, String, Int)] = {
+  def decodeAgainstSingleChar(bytes: List[Byte]) : Seq[(Byte, String, Int)] = {
     Helpers.eachByte.map { b =>
       val decode = bytes.xOrRepeating(List(b))
-      val str = Helpers.bytesToString(decode.bytes)
+      val str = decode.ascii
       (b, str, Score.score(str))
     }
   }
 
-  def bestSingleChar(msg : ByteList) : (Byte, String, Int) = {
+  def bestSingleChar(msg : List[Byte]) : (Byte, String, Int) = {
     decodeAgainstSingleChar(msg).maxBy(_._3)
   }
 

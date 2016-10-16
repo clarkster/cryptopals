@@ -1,6 +1,6 @@
 package clarkster.challenges
 
-import clarkster.{Helpers, PKCS7}
+import clarkster._
 
 object Challenge9_ImplementPKCS7Padding extends Challenge {
   override val number: Int = 9
@@ -19,8 +19,8 @@ object Challenge9_ImplementPKCS7Padding extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    val padded = PKCS7.pad(20, "YELLOW SUBMARINE".getBytes)
-    println("Padded block is " + Helpers.bytesToString(padded.bytes))
+    val padded = PKCS7.pad(20, "YELLOW SUBMARINE".bytes)
+    println("Padded block is " + padded.ascii)
     assert(padded.bytes == "YELLOW SUBMARINE".getBytes.toList ++ List.fill(4)(0x04))
     println("Test successful")
   }

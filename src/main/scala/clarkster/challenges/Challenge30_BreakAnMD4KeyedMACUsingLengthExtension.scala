@@ -14,27 +14,27 @@ object Challenge30_BreakAnMD4KeyedMACUsingLengthExtension extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    val md4 = MD4.withKey(Key(Helpers.randomLengthOfRandomBytes(2, 20)))
+    val md4 = MD4.withKey(Key(rnd(2, 20)))
 
-    val originalMessage = "comment1=cooking%20MCs;userdata=foo;comment2=%20like%20a%20pound%20of%20bacon".getBytes
-    val newMessage = ";admin=true".getBytes
+    val originalMessage = "comment1=cooking%20MCs;userdata=foo;comment2=%20like%20a%20pound%20of%20bacon".bytes
+    val newMessage = ";admin=true".bytes
 
     //SHA1(key || original-message || glue-padding || new-message)
 
     val signed = md4.sign(originalMessage)
 
     // Guessed profile - originalMessage + padding + newMessage, where padding is based on the key length too
-    def forgedProfile(keyLength : Int) : ByteList =  {
+    def forgedProfile(keyLength : Int)  =  {
       val gluePadding = MD4Padding.padChars(originalMessage.length + keyLength)
-      ByteList(originalMessage ++ gluePadding ++ newMessage)
+      originalMessage ++ gluePadding ++ newMessage
     }
 
     // forge a signature, by taking the valid SHA1 state, and appending our new padded data
-    def forgedSig(keyLength : Int) : ByteList = {
+    def forgedSig(keyLength : Int) = {
       val paddedExtraBlock = newMessage ++ MD4Padding.padChars(keyLength + forgedProfile(keyLength).length)
       MD4
-        .fromSig(signed.bytes)
-        .update(Block(paddedExtraBlock))
+        .fromSig(signed)
+        .update(paddedExtraBlock)
         .bytes
     }
     println("Guessing at key sizes. Identical code to last time, but targeted at the other algorithm")

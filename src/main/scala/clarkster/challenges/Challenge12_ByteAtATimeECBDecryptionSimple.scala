@@ -42,9 +42,8 @@ object Challenge12_ByteAtATimeECBDecryptionSimple extends Challenge {
         |YnkK
       """.stripMargin
 
-    val encryptorWithPrefix = Algorithms.withSecretAppended(ByteList.fromBase64(secretText), ECB(Key.random(16)).encrypt)
-
-    val decryptedPrefix : ByteList = EcbHacker.crackEncryptor(encryptorWithPrefix)
+    val encryptorWithPrefix = Algorithm.withSecretAppended(secretText.b64, Algorithm.ECB(rndKey(16)))
+    val decryptedPrefix = EcbHacker.crackEncryptor(encryptorWithPrefix)
     println(decryptedPrefix.ascii)
   }
 }

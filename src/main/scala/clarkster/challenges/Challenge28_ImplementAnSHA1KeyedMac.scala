@@ -19,14 +19,14 @@ object Challenge28_ImplementAnSHA1KeyedMac extends Challenge {
 
   override def main(args: Array[String]): Unit = {
 
-    val withKey = SHA.withKey(Key("Yellow Submarine"))
+    val withKey = SHA.withKey("Yellow Submarine".key)
 
-    val valid = withKey.sign(ByteList.fromAscii("My Secret Message"))
-    val tampered = withKey.sign(ByteList.fromAscii("My Secret Massage"))
+    val valid = withKey.sign("My Secret Message".bytes)
+    val tampered = withKey.sign("My Secret Massage".bytes)
 
     assert(valid != tampered)
 
-    val tampered2 = SHA.withKey(Key("Yellow Wubmarine")).sign(ByteList.fromAscii("My Secret Message"))
+    val tampered2 = SHA.withKey("Yellow Wubmarine".key).sign("My Secret Message".bytes)
 
     assert(valid != tampered2)
     println("Validated SHA1")

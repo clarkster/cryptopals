@@ -1,28 +1,29 @@
 package clarkster
 
-import java.nio.{ByteBuffer, ByteOrder}
+import java.nio.ByteOrder
 
 import scala.annotation.tailrec
 
 trait MessageSigner {
-  def sign(message : ByteList) : ByteList
-  def verify(message : ByteList, signature : ByteList) : Boolean = sign(message) == signature
+  def sign(message : List[Byte]) : List[Byte]
+  def verify(message : List[Byte], signature : List[Byte]) : Boolean = sign(message) == signature
 }
 
 abstract class MessageDigest[T <: MessageDigest[T]] extends MessageSigner {
   def bytes : List[Byte]
 
-  def update(block: Block): T = {
+  def update(block: List[Byte]): T = {
     this + permuteBlock(block)
   }
 
-  protected def permuteBlock(block: Block): T
+  protected def permuteBlock(block: List[Byte]): T
   protected def +(other : T): T
   protected def paddingMode : Padding
 
-  override def sign(message : ByteList) : ByteList =
+  override def sign(message : List[Byte]) : List[Byte] =
     message
-      .blocks(64, paddingMode)
+      .pad(64, paddingMode)
+      .blocks(64)
       .foldLeft(this)((state, block) => state.update(block))
       .bytes
 }
@@ -33,7 +34,7 @@ case class SHA(h0: Int, h1: Int, h2 :Int, h3 :Int, h4: Int) extends MessageDiges
     SHA(h0 + other.h0, h1 + other.h1, h2 + other.h2, h3 + other.h3, h4 + other.h4)
 
   override def bytes : List[Byte] = {
-    Helpers.intsToBytes(h0, h1, h2, h3, h4)
+    ByteListOps.fromInts(ByteOrder.BIG_ENDIAN)(h0, h1, h2, h3, h4)
   }
 
 
@@ -50,7 +51,7 @@ case class SHA(h0: Int, h1: Int, h2 :Int, h3 :Int, h4: Int) extends MessageDiges
     SHA(Helpers.leftShift(h0, 5) + f + h4 + k + w, h0, Helpers.leftShift(h1, 30), h2, h3)
   }
 
-  protected def permuteBlock(block: Block) : SHA = {
+  protected def permuteBlock(block: List[Byte]) : SHA = {
     assert(block.length == 64)
 
     expandToEighty(block)
@@ -58,7 +59,7 @@ case class SHA(h0: Int, h1: Int, h2 :Int, h3 :Int, h4: Int) extends MessageDiges
       .foldLeft(this)((state, pair) => state.permute(pair._2, pair._1))
   }
 
-  private def expandToEighty(block: Block) : Vector[Int] = {
+  private def expandToEighty(block: List[Byte]) : Vector[Int] = {
     @tailrec
     def addSuffix(soFar : Vector[Int]): Vector[Int] = {
       val i = soFar.length
@@ -72,7 +73,7 @@ case class SHA(h0: Int, h1: Int, h2 :Int, h3 :Int, h4: Int) extends MessageDiges
     // break message into 512-bit chunks
     // for each chunk
     // break chunk into sixteen 32-bit big-endian words w[i], 0 ≤ i ≤ 15
-    val prefix : Vector[Int] = block.bytes.grouped(4).map(bytes => ByteBuffer.wrap(bytes.toArray).getInt).toVector
+    val prefix : Vector[Int] = block.ints(ByteOrder.BIG_ENDIAN).toVector
 
     // Extend the sixteen 32-bit words into eighty 32-bit words:
     // for i from 16 to 79
@@ -86,25 +87,24 @@ case class SHA(h0: Int, h1: Int, h2 :Int, h3 :Int, h4: Int) extends MessageDiges
 object SHA extends MessageSigner {
   def default : SHA = new SHA(0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0)
 
-  def apply(message : ByteList) : ByteList = {
+  def apply(message : List[Byte]) : List[Byte] = {
     default.sign(message)
   }
 
   def withKey(key: Key) : MessageSigner = new MessageSigner {
-    override def sign(message: ByteList): ByteList = {
+    override def sign(message: List[Byte]): List[Byte] = {
       default.sign(key.bytes ++ message.bytes)
     }
   }
 
-  override def sign(message: ByteList): ByteList = {
+  override def sign(message: List[Byte]): List[Byte] = {
     default.sign(message)
   }
 
   def fromSig(bytes : List[Byte]) : SHA = {
     assert(bytes.size == 20)
-    val bb = java.nio.ByteBuffer.wrap(bytes.toArray)
-    val ib = bb.asIntBuffer()
-    SHA(ib.get(), ib.get(), ib.get(), ib.get(), ib.get())
+    val List(h0, h1, h2, h3, h4) = bytes.ints(ByteOrder.BIG_ENDIAN)
+    SHA(h0, h1, h2, h3, h4)
   }
 }
 
@@ -133,6 +133,7 @@ case class MD4(a : Int, b : Int, c : Int, d : Int) extends MessageDigest[MD4] {
 
   def addBytes(x: List[Int]): MD4 = {
 
+    // The list of transforms, as taken directly from the RFC
     val transforms : List[(MD4 => MD4)] = List (
       MD4.transform1(A, B, C, D, x(0), 3),
       MD4.transform1(D, A, B, C, x(1), 7),
@@ -176,29 +177,26 @@ case class MD4(a : Int, b : Int, c : Int, d : Int) extends MessageDigest[MD4] {
       MD4.transform3(D, A, B, C, x(10), 9),
       MD4.transform3(C, D, A, B, x(6), 11),
       MD4.transform3(B, C, D, A, x(14), 15),
-      MD4.transform3(A, B, C, D, x(1),   3),
-      MD4.transform3(D, A, B, C, x(9),   9),
-      MD4.transform3(C, D, A, B, x(5),  11),
+      MD4.transform3(A, B, C, D, x(1), 3),
+      MD4.transform3(D, A, B, C, x(9), 9),
+      MD4.transform3(C, D, A, B, x(5), 11),
       MD4.transform3(B, C, D, A, x(13), 15),
-      MD4.transform3(A, B, C, D, x(3),   3),
-      MD4.transform3(D, A, B, C, x(11),  9),
-      MD4.transform3(C, D, A, B, x(7),  11),
+      MD4.transform3(A, B, C, D, x(3), 3),
+      MD4.transform3(D, A, B, C, x(11), 9),
+      MD4.transform3(C, D, A, B, x(7), 11),
       MD4.transform3(B, C, D, A, x(15), 15)
     )
     transforms.foldLeft(this)((state, transform) => transform.apply(state))
   }
 
-  override def permuteBlock(block: Block): MD4 = {
+  override def permuteBlock(block: List[Byte]): MD4 = {
     assert(block.length == 64)
-    val bb = ByteBuffer.wrap(block.bytes.toArray)
-    bb.order(ByteOrder.LITTLE_ENDIAN)
-    val ib = bb.asIntBuffer()
-    val is = (1 to 16).map(_ => ib.get()).toList
+    val is = block.ints(ByteOrder.LITTLE_ENDIAN)
     addBytes(is)
   }
 
   override def bytes: List[Byte] = {
-    Helpers.intsToBytesLittleEndian(a, b, c, d)
+    ByteListOps.fromInts(ByteOrder.LITTLE_ENDIAN)(a, b, c, d)
   }
 
   override protected def +(other: MD4): MD4 = {
@@ -207,18 +205,16 @@ case class MD4(a : Int, b : Int, c : Int, d : Int) extends MessageDigest[MD4] {
 }
 
 
+
 object MD4 extends MessageSigner {
+  // Functions F, G, H from the RFC
   def f = (x : Int, y : Int, z : Int) => (x & y) | (~x & z)
   def g = (x : Int, y : Int, z : Int) => (x & y) | (x & z) | (y & z)
   def h = (x : Int, y : Int, z : Int) => x ^ y ^ z
 
-  def transform1(pos : MD4POS, arg1: MD4POS, arg2 : MD4POS, arg3 : MD4POS, x : Int, s: Int) : (MD4 => MD4) = state => {
-    //    A = (A + f(B,C,D) + X[i]) <<< s
-    val oldA = state.get(pos)
-    val intermediate = oldA + f(state.get(arg1), state.get(arg2), state.get(arg3)) + x
-    val shifted = Helpers.leftShift(intermediate, s)
-    state.newState(pos, shifted)
-  }
+  // The three Transformations from the RFC
+  def transform1(pos : MD4POS, arg1: MD4POS, arg2 : MD4POS, arg3 : MD4POS, x : Int, s: Int) : (MD4 => MD4) = state =>
+    state.newState(pos, Helpers.leftShift(state.get(pos) + f(state.get(arg1), state.get(arg2), state.get(arg3)) + x, s))
 
   def transform2(pos : MD4POS, arg1: MD4POS, arg2 : MD4POS, arg3 : MD4POS, x : Int, s: Int) : (MD4 => MD4) = state =>
     //A = (A + g(B,C,D) + X[i] + 5A827999) <<< s
@@ -231,25 +227,23 @@ object MD4 extends MessageSigner {
 
   def default : MD4 = new MD4(0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476)
 
-  def apply(message : ByteList) : ByteList = {
+  def apply(message : List[Byte]) : List[Byte] = {
     default.sign(message)
   }
 
   def withKey(key: Key) : MessageSigner = new MessageSigner {
-    override def sign(message: ByteList): ByteList = {
+    override def sign(message: List[Byte]): List[Byte] = {
       default.sign(key.bytes ++ message.bytes)
     }
   }
 
-  override def sign(message: ByteList): ByteList = {
+  override def sign(message: List[Byte]): List[Byte] = {
     default.sign(message)
   }
 
   def fromSig(bytes : List[Byte]) : MD4 = {
     assert(bytes.size == 16)
-    val bb = java.nio.ByteBuffer.wrap(bytes.toArray)
-    bb.order(ByteOrder.LITTLE_ENDIAN)
-    val ib = bb.asIntBuffer()
-    MD4(ib.get(), ib.get(), ib.get(), ib.get())
+    val List(a, b, c, d) = bytes.ints(ByteOrder.LITTLE_ENDIAN)
+    MD4(a, b, c, d)
   }
 }

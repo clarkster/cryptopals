@@ -1,8 +1,7 @@
 package clarkster.challenges
 
 import clarkster._
-
-import scala.io.Source
+import clarkster.Algorithm._
 
 object Challenge10_ImplementCBCMode extends Challenge {
   override val number: Int = 10
@@ -24,9 +23,9 @@ object Challenge10_ImplementCBCMode extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    val source = CipherText.fromBase64(Source.fromURL(getClass.getResource("/test10.txt")).getLines().mkString, 16)
-    val cbc = CBC(Key("YELLOW SUBMARINE"), Block.copies(16, 0))
-    val decrypted = cbc.decrypt(source)
+    val source = Helpers.testFile(10).getLines().mkString.b64
+    val cbc = CBC("YELLOW SUBMARINE".key, ByteListOps.blank(16), mode=Decrypt)
+    val decrypted = source.apply(cbc)
     println("Decrypted Poetry:")
     println(decrypted.ascii)
   }

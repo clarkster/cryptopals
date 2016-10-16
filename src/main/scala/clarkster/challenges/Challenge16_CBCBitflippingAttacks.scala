@@ -1,6 +1,6 @@
 package clarkster.challenges
 
-import clarkster.{Block, CipherText, _}
+import clarkster._
 
 object Challenge16_CBCBitflippingAttacks extends Challenge {
   override val number: Int = 16
@@ -39,25 +39,28 @@ object Challenge16_CBCBitflippingAttacks extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    val algorithm = CBC(Key.random(16), Block.random(16))
+    val key = rndKey(16)
+    val iv = rnd(16)
+    val encrypt = Algorithm.CBC(key, iv, Encrypt)
+    val decrypt = Algorithm.CBC(key, iv, Decrypt)
 
-    def profile(userdata: String): CipherText = {
+    def profile(userdata: String): List[Byte] = {
       val profile = "comment1=cooking%20MCs;userdata=" + userdata.replace(";=", "") + ";comment2=%20like%20a%20pound%20of%20bacon"
-      algorithm.encrypt(profile.getBytes)
+      encrypt(profile.bytes)
     }
 
-    def isAdmin(encryptedProfile: CipherText): Boolean = {
-      val bytes : ByteList = algorithm.decrypt(encryptedProfile)
+    def isAdmin(encryptedProfile: List[Byte]): Boolean = {
+      val bytes = decrypt(encryptedProfile)
       val profile = bytes.ascii
       profile.contains(";admin=true;")
     }
 
-    val probeBlock = Block("0123456789ABCDEF".getBytes)
+    val probeBlock = "0123456789ABCDEF".bytes
     println("Starting with probeBlock " + probeBlock.ascii)
-    val forceAdminBlock = Block("0123;admin=true;".getBytes)
+    val forceAdminBlock = "0123;admin=true;".bytes
     println("We would like to use a block to force admin as " + forceAdminBlock.ascii)
 
-    val forceAdminSanitised = Block("01230admin0true0".getBytes)
+    val forceAdminSanitised = "01230admin0true0".bytes
     println("We sanitise this by replacing the prohibited chars " + forceAdminSanitised.ascii)
 
     val flipper = forceAdminSanitised.xOr(forceAdminBlock)
@@ -66,12 +69,12 @@ object Challenge16_CBCBitflippingAttacks extends Challenge {
 
     val goodProfile = profile(probeBlock.ascii + forceAdminSanitised.ascii)
 
-    val (preamble, remainder) = goodProfile.blocks.splitAt(2)  // We happen to know the preamble is exactly two blocks worth
+    val (preamble : List[List[Byte]], remainder: List[List[Byte]]) = goodProfile.blocks(16).splitAt(2)  // We happen to know the preamble is exactly two blocks worth
 
     println("Rogue encrypted profile, with same bits flipped in the probe crypto block")
-    val rogueProfile : CipherText = CipherText(preamble ::: List(remainder.head.xOr(flipper)) ::: remainder.tail)
+    val rogueProfile = preamble ::: List(remainder.head.xOr(flipper).bytes) ::: remainder.tail
 
-    assert(isAdmin(rogueProfile))
+    assert(isAdmin(rogueProfile.flatten))
     println("And we're successfully admin")
   }
 }

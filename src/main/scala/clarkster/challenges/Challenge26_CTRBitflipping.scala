@@ -1,6 +1,7 @@
 package clarkster.challenges
 
 import clarkster._
+import clarkster.Algorithm._
 
 object Challenge26_CTRBitflipping extends Challenge {
   override val number: Int = 26
@@ -13,15 +14,15 @@ object Challenge26_CTRBitflipping extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    val algorithm = CTR(Key.random(16), Block.random(8))
+    val algorithm = CTR(rndKey(16), rnd(8))
 
-    def profile(userdata: String): CipherText = {
+    def profile(userdata: String): List[Byte] = {
       val profile = "comment1=cooking%20MCs;userdata=" + userdata.replace(";=", "") + ";comment2=%20like%20a%20pound%20of%20bacon"
-      algorithm.encrypt(profile.getBytes)
+      algorithm(profile.bytes)
     }
 
-    def isAdmin(encryptedProfile: CipherText): Boolean = {
-      val bytes : ByteList = algorithm.decrypt(encryptedProfile)
+    def isAdmin(encryptedProfile: List[Byte]): Boolean = {
+      val bytes = algorithm(encryptedProfile)
       val profile = bytes.ascii
       profile.contains(";admin=true;")
     }
@@ -29,7 +30,7 @@ object Challenge26_CTRBitflipping extends Challenge {
 
     val fixedText = "A" * 16 * 20
     val knownCipher = profile(fixedText)
-    val knownStream = knownCipher.xOrRepeating(fixedText.map(_.toByte).toList).blocks
+    val knownStream = knownCipher.xOrRepeating(fixedText.map(_.toByte).toList).blocks(16)
 
     println("Determined a few bytes of the CTR stream. (We can't guess the first 2 blocks)")
 
@@ -38,11 +39,11 @@ object Challenge26_CTRBitflipping extends Challenge {
 
     println("Take a valid profile")
     val nextCTCBlock = knownStream(userProfile.length / 16)
-    val encryptedIsAdminSuffix = Block(";admin=true;".getBytes).xOr(nextCTCBlock, truncateToShortest = true)
+    val encryptedIsAdminSuffix = ";admin=true;".bytes.xOr(nextCTCBlock)
 
     println("Add our evil suffix")
 
-    val adminProfile = CipherText(userProfile.blocks :+ encryptedIsAdminSuffix)
+    val adminProfile = userProfile ::: encryptedIsAdminSuffix
     assert(isAdmin(adminProfile))
     println("And we're successfully admin")
   }

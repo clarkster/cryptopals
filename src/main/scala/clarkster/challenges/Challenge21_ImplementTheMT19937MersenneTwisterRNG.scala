@@ -16,20 +16,16 @@ object Challenge21_ImplementTheMT19937MersenneTwisterRNG extends Challenge {
 
 
   override def main(args: Array[String]): Unit = {
-    val r1 = Random(100)
+    val r1 = RandomNumber.seed(100)
     println("Some random numbers...")
-    5 times {
-      println(r1.extract_number)
-    }
 
-    val r2 = Random(100)
-    5 times r2.extract_number
+    val seq1 = RandomNumber.randomDigits(r1, 5)
+    println(seq1)
+    val seq2 = RandomNumber.randomDigits(r1, 5)
+    val seq3 = RandomNumber.randomDigits(RandomNumber.seed(101), 5)
 
-    val r3 = Random(101)
-    6 times r3.extract_number
-
-    assert(r1.extract_number == r2.extract_number)
-    assert(r1.extract_number != r3.extract_number)
+    assert(seq1 == seq2)
+    assert(seq1 != seq3)
 
     println("Tested same seed gives same sequence, different gives different")
 

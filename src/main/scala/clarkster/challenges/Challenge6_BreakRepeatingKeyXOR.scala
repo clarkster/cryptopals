@@ -37,7 +37,7 @@ object Challenge6_BreakRepeatingKeyXOR extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    val bytes = ByteList.fromBase64(Source.fromURL(getClass.getResource("/test6.txt")).mkString(""))
+    val bytes = Helpers.testFile(number).mkString("").b64
     println("Test string: " + bytes.base64)
     val keySize = Oracle.detectECBBlockSize(bytes)
     println("Determined Key Size: " + keySize)
@@ -45,8 +45,8 @@ object Challenge6_BreakRepeatingKeyXOR extends Challenge {
 
     println("Determine Key: " + key.ascii)
 
-    val decoded = bytes.xOrRepeating(key.bytes)
+    val decoded = bytes.xOrRepeating(key)
     println("Decoded message: ")
-    println(Helpers.bytesToString(decoded.bytes))
+    println(decoded.ascii)
   }
 }

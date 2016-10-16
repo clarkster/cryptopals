@@ -21,7 +21,7 @@ object Challenge14_ByteAtATimeECBDecryption_Harder extends Challenge {
   override def main(args: Array[String]): Unit = {
     println("Detecting... (this one's a bit slow)")
 
-    val ecb = ECB(key = Key.random(16))
+    val ecb = Algorithm.ECB(key = rndKey(16))
     val secretText =
       """
         |Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
@@ -29,12 +29,12 @@ object Challenge14_ByteAtATimeECBDecryption_Harder extends Challenge {
         |dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
         |YnkK
       """.stripMargin
-    val secret = ByteList.fromBase64(secretText)
+    val secret = secretText.b64
 
-    val secretAppended = Algorithms.withSecretAppended(secret, ecb.encrypt)
-    val encryptor = Algorithms.withRandomPrepended(256, secretAppended)
+    val secretAppended = Algorithm.withSecretAppended(secret, ecb)
+    val encryptor = Algorithm.withRandomPrepended(256, secretAppended)
 
 
-    println (Helpers.bytesToString(EcbHacker.crackEncryptorWithRandomPrefix(encryptor)))
+    println (EcbHacker.crackEncryptorWithRandomPrefix(encryptor).ascii)
   }
 }

@@ -27,20 +27,16 @@ object Challenge23_CloneAnMT19937RNGFromItsOutput extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    val rng = Random(scala.util.Random.nextInt(10000))
-
-    val state = (0 to 623).map(_ => rng.extract_number).map(i => rng.untemper(i))
-
-    val clonedRng = Random(0)
-    state.zipWithIndex.foreach(pair => clonedRng.MT(pair._2) = pair._1)
+    val seed = RandomNumber.seed(scala.util.Random.nextInt(10000))
+    val state = RandomNumber.randomDigits(seed, 624).map(i => RandomNumber.untemper(i))
+    val clonedRng = RandomState(624, state)
 
     println("Cloned RNG. Testing the next few random numbers")
-    10 times {
-      val x1 = rng.extract_number
-      val x2 = clonedRng.extract_number
-      println(x1)
-      assert(x1 == x2)
-    }
+
+    val guessedNext = RandomNumber.randomDigits(clonedRng, 10)
+    val actualNext = RandomNumber.randomDigits(seed, 634).takeRight(10)
+
+    assert(guessedNext == actualNext)
 
     println("Cloned RNG successfully")
 

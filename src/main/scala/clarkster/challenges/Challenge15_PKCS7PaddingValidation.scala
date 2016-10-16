@@ -1,6 +1,6 @@
 package clarkster.challenges
 
-import clarkster.{ByteList, Helpers, PKCS7}
+import clarkster._
 
 import scala.util.{Failure, Success, Try}
 
@@ -28,10 +28,10 @@ object Challenge15_PKCS7PaddingValidation extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    assert(PKCS7.unpad(ByteList.fromAscii("ICE ICE BABY").bytes ++ ByteList.copies(4, 4).bytes).ascii == "ICE ICE BABY")
+    assert(PKCS7.unpad("ICE ICE BABY".bytes ++ ByteListOps.copies(4, 4).bytes).ascii == "ICE ICE BABY")
     println("Valid padding unpadded succesfully")
 
-    val unpadded = Try(PKCS7.unpad("ICE ICE BABY".getBytes ++ Array.fill(4)(5.toByte)))
+    val unpadded = Try(PKCS7.unpad("ICE ICE BABY".bytes ++ Array.fill(4)(5.toByte)))
 
     assert(unpadded match {
       case Success(_) => false

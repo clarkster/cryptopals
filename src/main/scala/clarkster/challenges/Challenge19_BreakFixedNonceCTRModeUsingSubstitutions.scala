@@ -1,6 +1,7 @@
 package clarkster.challenges
 
 import clarkster._
+import clarkster.Algorithm._
 
 object Challenge19_BreakFixedNonceCTRModeUsingSubstitutions extends Challenge {
   override val number: Int = 19
@@ -70,7 +71,7 @@ object Challenge19_BreakFixedNonceCTRModeUsingSubstitutions extends Challenge {
 
   override def main(args: Array[String]): Unit = {
 
-    val ctr = CTR(Key.random(16), Block.copies(8, 0))
+    val ctr = CTR(rndKey(16), ByteListOps.blank(8))
 
     val cipherTexts =
       """
@@ -116,8 +117,8 @@ object Challenge19_BreakFixedNonceCTRModeUsingSubstitutions extends Challenge {
         |QSB0ZXJyaWJsZSBiZWF1dHkgaXMgYm9ybi4=
       """.stripMargin
         .lines
-        .map(ByteList.fromBase64)
-        .map(ctr.encrypt)
+        .map(_.b64)
+        .map(_.apply(ctr))
         .toList
 
 
@@ -125,8 +126,8 @@ object Challenge19_BreakFixedNonceCTRModeUsingSubstitutions extends Challenge {
     val commonWords = lowerCaseCommon ++ lowerCaseCommon.map(_.capitalize)
 
     def commonWordEncryptedAtPos(commonWord: String, pos: Int) = {
-      val bytes = ByteList.fromAscii(" " * pos + commonWord)
-      ctr.encrypt(bytes).bytes.slice(pos, pos + commonWord.length)
+      val bytes = (" " * pos + commonWord).bytes
+      ctr(bytes).slice(pos, pos + commonWord.length)
     }
 
     val strLen = cipherTexts.map(_.length).max
@@ -151,7 +152,7 @@ object Challenge19_BreakFixedNonceCTRModeUsingSubstitutions extends Challenge {
 
 
     println("Detected keystream. The list of decoded texts follows...")
-    cipherTexts.foreach(cipherText => println(Helpers.bytesToString(Helpers.xOr(cipherText.bytes, keyStream.toList, truncateToShortest = true))))
+    cipherTexts.foreach(cipherText => println(cipherText.bytes.xOr(keyStream.toList).ascii))
 
     println("Should be close enough - we don't quite get the last bytes, and with some more brute forcing we probably could")
   }

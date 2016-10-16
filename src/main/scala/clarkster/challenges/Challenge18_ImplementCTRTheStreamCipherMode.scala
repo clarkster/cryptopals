@@ -44,9 +44,8 @@ object Challenge18_ImplementCTRTheStreamCipherMode extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    val ctext = CipherText.fromBase64("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==", 16)
-    val ctr = CTR(Key("YELLOW SUBMARINE"), Block.copies(8, 0))
-    val plain = ctr.decrypt(ctext)
+    val ctext = "L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==".b64
+    val plain = Algorithm.CTR("YELLOW SUBMARINE".key, ByteListOps.blank(8))(ctext)
     println("Decrypted poetry from CTR mode")
     println(plain.ascii)
   }

@@ -1,6 +1,7 @@
 package clarkster.challenges
 
 import clarkster._
+import clarkster.Algorithm._
 
 object Challenge24_CreateTheMT19937StreamCipherAndBreakIt extends Challenge {
   override val number: Int = 24
@@ -26,24 +27,24 @@ object Challenge24_CreateTheMT19937StreamCipherAndBreakIt extends Challenge {
     val rng = MT19937(actualSeed)
 
     val poetry = "Dropping MCs like a pound of bacon"
-    val cipher = rng.encrypt(ByteList.fromAscii(poetry))
-    assert(rng.decrypt(cipher).ascii == poetry)
+    val cipher = rng(poetry.bytes)
+    assert(rng(cipher).ascii == poetry)
     println("Validated rng encryptrion")
 
 
-    val algorithmToHack = Algorithms.withRandomPrepended(100, rng.encrypt)
+    val algorithmToHack = Algorithm.withRandomPrepended(100, rng)
 
-    val testTxt = ByteList.copies(14, 'A')
+    val testTxt = ByteListOps.copies(14, 'A')
     val ciphered = algorithmToHack.apply(testTxt)
-    val last14Bytes = ciphered.bytes.takeRight(14)
-    val knownRandomSequence = Helpers.xOr(last14Bytes, testTxt.bytes)
+    val last14Bytes = ciphered.takeRight(14)
+    val knownRandomSequence = last14Bytes.xOr(testTxt)
 
     println("From the test, we know that the RNG generates the following sequence somewhere: " + knownRandomSequence)
 
     val seeds = (0 to 65535)
       .map(_.toShort)
-      .map(i => (i, Random(i)))    // Bruteforce, For each seed, generated a RNG
-      .map(pair => (pair._1, (0 to 300).map(_ => pair._2.extract_number.toByte)))  // first n bytes since we don't know how many random bytes will be prefixed
+      .map(i => (i, RandomNumber.seed(i)))    // Bruteforce, For each seed, generated a RNG
+      .map(pair => (pair._1, RandomNumber.randomDigits(pair._2, 300).map(_.toByte)))  // first n bytes since we don't know how many random bytes will be prefixed
       .filter(pair => pair._2.containsSlice(knownRandomSequence))
       .map(pair => pair._1)
 
@@ -51,16 +52,16 @@ object Challenge24_CreateTheMT19937StreamCipherAndBreakIt extends Challenge {
     assert(seeds.contains(actualSeed))
     println("And validated")
 
-    def passwordResetToken() : ByteList = {
-      val rng = Random(System.currentTimeMillis().toShort)
-      (0 to 20).map(_ => rng.extract_number.toByte)
+    def passwordResetToken() : List[Byte] = {
+      val rng = RandomNumber.seed(System.currentTimeMillis().toShort)
+      RandomNumber.randomDigits(rng, 20).map(_.toByte)
     }
 
-    def isFromRng(token: ByteList) = {
+    def isFromRng(token: List[Byte]) = {
        (0 to 65535)
         .map(_.toShort)
-        .map(i => (i, Random(i)))    // Bruteforce, For each seed, generated a RNG
-        .map(pair => (pair._1, token.bytes.map(_ => pair._2.extract_number.toByte)))  // first n bytes since we don't know how many random bytes will be prefixed
+        .map(i => (i, RandomNumber.seed(i)))    // Bruteforce, For each seed, generated a RNG
+        .map(pair => (pair._1, RandomNumber.randomDigits(pair._2, token.bytes.length)))  // first n bytes since we don't know how many random bytes will be prefixed
         .exists(pair => pair._2 == token.bytes)
      }
     val token = passwordResetToken()

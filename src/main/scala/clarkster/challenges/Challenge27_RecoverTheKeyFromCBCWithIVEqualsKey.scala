@@ -1,6 +1,7 @@
 package clarkster.challenges
 
 import clarkster._
+import clarkster.Algorithm._
 
 import scala.util.{Failure, Success, Try}
 
@@ -31,32 +32,31 @@ object Challenge27_RecoverTheKeyFromCBCWithIVEqualsKey extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    val keyBytes = "YELLOW SUBMARINE".getBytes.toList
-    val cbc = CBC(Key(keyBytes), Block(keyBytes))
+    val key = "YELLOW SUBMARINE".key
 
-    def checkProfile(profile : CipherText) = {
-      val decrypted = cbc.decrypt(profile)
+    def checkProfile(profile : List[Byte]) = {
+      val decrypted = profile.apply(CBC(key, key, padding=NoPadding, mode=Decrypt))
       if (decrypted.ascii.exists(c => c > 128)) {
         throw new IllegalArgumentException(decrypted.ascii)
       }
     }
 
-    val p1p2p3 = ByteList.fromAscii("1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF")
-    val c1c2c3 = cbc.encrypt(p1p2p3)
+    val p1p2p3 = "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".bytes
+    val c1c2c3 = p1p2p3.apply(CBC(key, key, mode=Encrypt))
     checkProfile(c1c2c3)
 
-    val c100c1 = CipherText(List(c1c2c3.blocks.head, Block.copies(16, 0), c1c2c3.blocks.head))
+    val c100c1 = c1c2c3.take(16) ::: ByteListOps.blank(16).bytes ::: c1c2c3.take(16)
 
     val recoveredKey = Try(checkProfile(c100c1)) match {
       case Success(_) => Nil
       case Failure(e) =>
         val str = e.getMessage
-        val plainBlocks = ByteList.fromAscii(str).blocks(16, NoPadding)
-        plainBlocks.head.xOr(plainBlocks(2)).bytes
+        val plainBlocks = str.bytes.blocks(16)
+        plainBlocks.head.xOr(plainBlocks(2))
     }
     println("Recovered key from exception message")
 
-    assert(recoveredKey == keyBytes)
+    assert(recoveredKey == key)
     println("And it matches")
 
   }

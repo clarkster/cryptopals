@@ -1,6 +1,6 @@
 package clarkster.challenges
 
-import clarkster.ByteList
+import clarkster._
 
 object Challenge2_FixedXor extends Challenge {
 
@@ -22,12 +22,12 @@ object Challenge2_FixedXor extends Challenge {
     """.stripMargin
 
   def main(args: Array[String]): Unit = {
-    val str1 = ByteList.fromHex("1c0111001f010100061a024b53535009181c")
-    val str2 = ByteList.fromHex("686974207468652062756c6c277320657965")
+    val str1 = "1c0111001f010100061a024b53535009181c".hex
+    val str2 = "686974207468652062756c6c277320657965".hex
     val xOred = str1.xOr(str2)
 
     println(s"XOR(${str1.hex}, ${str2.hex}) = ${xOred.hex}")
-    assert(xOred.hex == "746865206b696420646f6e277420706c6179")
+    assert(xOred == "746865206b696420646f6e277420706c6179".hex)
 
     println("Buffers XORed successfully")
   }

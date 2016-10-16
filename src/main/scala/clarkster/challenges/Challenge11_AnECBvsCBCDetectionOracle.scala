@@ -1,7 +1,7 @@
 package clarkster.challenges
 
-import clarkster.Helpers.intWithTimes
 import clarkster._
+import clarkster.Algorithm._
 
 import scala.util.Random
 
@@ -28,14 +28,15 @@ object Challenge11_AnECBvsCBCDetectionOracle extends Challenge {
     """.stripMargin
 
   override def main(args: Array[String]): Unit = {
-    def encryptionOracle :  (Algorithm, Algorithms.Encryptor) = {
-      val (mode, encryptor) = if (Random.nextBoolean()) {
-        (ECB, ECB(Key.random(16), padding = PKCS7))
+    def encryptionOracle :  (String, Algorithm.Encryptor) = {
+      val (mode : String, encryptor : Algorithm.Encryptor) = if (Random.nextBoolean()) {
+        ("ECB", ECB(rndKey(16), padding = PKCS7))
       } else {
-        (CBC, CBC(Key.random(16), Block.random(16), padding = PKCS7))
+        ("CBC", CBC(rndKey(16), rnd(16), padding = PKCS7))
       }
-      val encryptorWithRandomPrefixSuffix : Algorithms.Encryptor =
-              {plainText : ByteList => encryptor.encrypt(ByteList(Helpers.randomLengthOfRandomBytes(5, 10) ++ plainText.bytes ++ Helpers.randomLengthOfRandomBytes(5, 10)))}
+      val encryptorWithRandomPrefixSuffix =
+              {plainText : List[Byte] =>
+                encryptor.apply(rnd(5, 10) ++ plainText ++ rnd(5, 10))}
       (mode, encryptorWithRandomPrefixSuffix)
     }
 

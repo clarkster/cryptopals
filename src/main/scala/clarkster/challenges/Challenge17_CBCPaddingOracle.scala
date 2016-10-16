@@ -1,6 +1,7 @@
 package clarkster.challenges
 
-import clarkster.{Block, _}
+import clarkster._
+import clarkster.Algorithm._
 
 import scala.util.{Random, Try}
 
@@ -63,46 +64,44 @@ object Challenge17_CBCPaddingOracle extends Challenge {
                     "MDAwMDA4b2xsaW4nIGluIG15IGZpdmUgcG9pbnQgb2g=",
                     "MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzbyBteSBoYWlyIGNhbiBibG93")
 
-    val iv = Block.random(16)
-    val cbc = CBC(Key.random(16), iv)
+    val iv = rnd(16)
+    val key = rndKey(16)
+    val encrypt = CBC(key, iv, Encrypt)
+    val decrypt = CBC(key, iv, Decrypt, NoPadding)
 
-    def encrypt : CipherText = {
-      val str = ByteList.fromBase64(strs(Random.nextInt(10)))
-      cbc.encrypt(str)
+    def cipherText : List[Byte] = {
+      val str = strs(Random.nextInt(10)).b64
+      encrypt(str)
     }
 
-    def isPaddingValid(cipherText: CipherText) : Boolean = {
-      Try(PKCS7.unpad(cbc.decrypt(cipherText))) isSuccess
+    def isPaddingValid(cipherText: List[Byte] ) : Boolean = {
+      Try(PKCS7.unpad(decrypt(cipherText))) isSuccess
     }
-
-    val cipherText = encrypt
-
     // Reference http://robertheaton.com/2013/07/29/padding-oracle-attack
     // For a pair of crypted blocks, we can target the second one by carefully setting up a pair of blocks and determining
     // if the padding is valid.
-    def determineBlock(prevBlock : Block, currentBlock : Block): String = {
+    def determineBlock(prevBlock : List[Byte], currentBlock : List[Byte]): String = {
       var intermediateState: List[Byte] = List()
       for (i <- 1 to 16) {
         val found = Helpers.eachByte.find(b => {
-          val start: List[Byte] = List.fill(16 - i)('A'.toByte) :+ b
-          val ending: List[Byte] = intermediateState.map(b => (b ^ i).toByte)
-          val block = Block(start ::: ending)
-
-          val test = CipherText(List(block, currentBlock))
+          val start = List.fill(16 - i)('A'.toByte) :+ b
+          val ending = intermediateState.map(b => (b ^ i).toByte)
+          val block = start ::: ending
+          val test = block ::: currentBlock
           isPaddingValid(test)
         })
         intermediateState = (found.get ^ i).toByte :: intermediateState
       }
-      Block(intermediateState).xOr(prevBlock).ascii
+      intermediateState.xOr(prevBlock).ascii
     }
 
 
     // Wording of the challenge wasn't quite clear - as a hacker, have we obtained the IV too?  If so, we can
     // get to the first block of plain text
-    val firstBlock = determineBlock(iv, cipherText.blocks.head)
+    val firstBlock = determineBlock(iv, cipherText.take(16))
 
     // Otherwise we can get to all except the first
-    val decrypted = cipherText.blocks.sliding(2, 1).map(blocks => determineBlock(blocks.head, blocks(1))).mkString
+    val decrypted = cipherText.grouped(16).sliding(2, 1).map(blocks => determineBlock(blocks.head, blocks(1))).mkString
 
     println(firstBlock + decrypted)
 

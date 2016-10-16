@@ -57,17 +57,19 @@ object Challenge13_ECBCutAndPaste extends Challenge {
       profile mapValues(_.replaceAll("&=", "")) map(pair => pair._1 + "=" + pair._2) mkString "&"
     }
 
-    val ecb = ECB(Key.random(16))
+    val key = rndKey(16)
+    val ecb = Algorithm.ECB(key)
+    val decrypt = Algorithm.ECB(key, padding=NoPadding, mode=Decrypt)
 
-    def encryptProfileFor(str : String) : CipherText = {
-      ecb.encrypt(ByteList.fromAscii(profileFor(str)))
+    def encryptProfileFor(str : String)  = {
+      ecb(profileFor(str).bytes)
     }
 
-    def decryptProfileFor(txt : CipherText) : Map[String, String] = {
-      parse(ecb.decrypt(txt).ascii)
+    def decryptProfileFor(txt : List[Byte]) : Map[String, String] = {
+      parse(decrypt(txt).ascii)
     }
 
-    val encryptor : Algorithms.Encryptor = {
+    val encryptor : Algorithm.Encryptor = {
       byteList => encryptProfileFor(byteList.ascii)
     }
 
@@ -85,7 +87,7 @@ object Challenge13_ECBCutAndPaste extends Challenge {
 
 
     val profile2 = encryptProfileFor("1234567890123")
-    val profile3 = encryptProfileFor("1234567890" + "admin" + ByteList.copies(11, '=').ascii) // pad with a character we know will be strippeds
+    val profile3 = encryptProfileFor("1234567890" + "admin" + ByteListOps.copies(11, '=').ascii) // pad with a character we know will be strippeds
 
     println(
       s"""
@@ -94,7 +96,7 @@ object Challenge13_ECBCutAndPaste extends Challenge {
          |Our hack crypto text is constructed from the valid profile, with the last block replaced
       """.stripMargin)
 
-    val target = profile2.blocks.slice(0, 2) :+ profile3.blocks(1)
+    val target = profile2.take(32) ::: profile3.slice(16, 32)
     println("Decrypted profile is " + decryptProfileFor(target))
     assert(decryptProfileFor(target)("role") == "admin")
     println("And we're successfully admin")
